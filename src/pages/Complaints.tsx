@@ -217,7 +217,7 @@ export default function Complaints() {
     
     addNotification({
       title: "تمت الإضافة",
-      message: `تم إضافة الشكوى رقم ${newId} بنجاح",
+      message: `تم إضافة الشكوى رقم ${newId} بنجاح`,
       type: "success"
     });
     
@@ -257,7 +257,7 @@ export default function Complaints() {
     
     addNotification({
       title: "تم التحديث",
-      message: `تم تحديث الشكوى رقم ${selectedComplaint.id} بنجاح",
+      message: `تم تحديث الشكوى رقم ${selectedComplaint.id} بنجاح`,
       type: "success"
     });
   };
@@ -274,7 +274,7 @@ export default function Complaints() {
     
     addNotification({
       title: "تم الحذف",
-      message: `تم حذف الشكوى رقم ${selectedComplaint.id} بنجاح",
+      message: `تم حذف الشكوى رقم ${selectedComplaint.id} بنجاح`,
       type: "success"
     });
   };
@@ -442,7 +442,7 @@ export default function Complaints() {
           <CardContent>
             <div className="flex flex-col md:flex-row gap-4 mb-6">
               <div className="relative flex-1">
-                <Search className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Filter className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="بحث عن عميل، مشروع، أو شكوى..."
                   value={searchTerm}
