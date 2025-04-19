@@ -21,11 +21,11 @@ export default function Layout({ children, requireAuth = true }: LayoutProps) {
   }
 
   if (!requireAuth) {
-    return <div className="min-h-screen bg-background">{children}</div>;
+    return <div className="min-h-screen bg-background" dir="rtl">{children}</div>;
   }
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-screen bg-background" dir="rtl">
       <Sidebar />
       <main className="flex-1 p-6 overflow-x-hidden">{children}</main>
     </div>

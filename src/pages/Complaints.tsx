@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import Layout from "@/components/layout/Layout";
 import { useAuth } from "@/context/AuthContext";
@@ -32,7 +31,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Filter, Plus, Search } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Filter, Plus, Trash2, Edit, Eye } from "lucide-react";
 
 // بيانات تجريبية للشكاوى
 const complaintsDummyData = [
@@ -47,7 +56,10 @@ const complaintsDummyData = [
     description: "مشكلة في تسرب المياه من السقف",
     action: "تم إصلاح التسرب وإعادة دهان السقف",
     duration: 2,
-    createdBy: "موظف خدمة العملاء"
+    createdBy: "موظف خدمة العملاء",
+    createdAt: "2025-04-15T10:30:00",
+    updatedBy: null,
+    updatedAt: null
   },
   {
     id: "1002",
@@ -115,6 +127,9 @@ interface Complaint {
   action: string;
   duration: number;
   createdBy: string;
+  createdAt: string;
+  updatedBy: string | null;
+  updatedAt: string | null;
 }
 
 export default function Complaints() {
@@ -124,20 +139,22 @@ export default function Complaints() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedComplaint, setSelectedComplaint] = useState<Complaint | null>(null);
   
-  // بيانات الشكوى الجديدة
-  const [newComplaint, setNewComplaint] = useState<Omit<Complaint, "id" | "createdBy" | "duration">>({
+  const [newComplaint, setNewComplaint] = useState<Omit<Complaint, "id" | "createdBy" | "duration" | "createdAt" | "updatedBy" | "updatedAt">>({
     date: new Date().toISOString().split("T")[0],
     customerName: "",
     project: "",
     unitNumber: "",
     source: "",
-    status: "new",
+    status: "جديدة",
     description: "",
     action: ""
   });
 
-  // تصفية الشكاوى
   const filteredComplaints = complaints.filter((complaint) => {
     const matchesSearch = 
       complaint.customerName.includes(searchTerm) || 
@@ -150,7 +167,6 @@ export default function Complaints() {
     return matchesSearch && matchesStatus;
   });
 
-  // معالجة تغيير بيانات الشكوى الجديدة
   const handleNewComplaintChange = (field: string, value: string) => {
     setNewComplaint((prev) => ({
       ...prev,
@@ -158,41 +174,122 @@ export default function Complaints() {
     }));
   };
 
-  // إضافة شكوى جديدة
+  const handleViewComplaint = (complaint: Complaint) => {
+    setSelectedComplaint(complaint);
+    setIsViewDialogOpen(true);
+  };
+
+  const handleEditSetup = (complaint: Complaint) => {
+    setSelectedComplaint(complaint);
+    setNewComplaint({
+      date: complaint.date,
+      customerName: complaint.customerName,
+      project: complaint.project,
+      unitNumber: complaint.unitNumber,
+      source: complaint.source,
+      status: complaint.status,
+      description: complaint.description,
+      action: complaint.action
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleDeleteSetup = (complaint: Complaint) => {
+    setSelectedComplaint(complaint);
+    setIsDeleteDialogOpen(true);
+  };
+
   const handleAddComplaint = () => {
-    // توليد رقم تذكرة جديد
     const newId = (1000 + complaints.length + 1).toString();
+    const now = new Date().toISOString();
     
     const complaint: Complaint = {
       ...newComplaint,
       id: newId,
       createdBy: user?.username || "مستخدم النظام",
-      duration: 0
+      duration: 0,
+      createdAt: now,
+      updatedBy: null,
+      updatedAt: null
     };
     
     setComplaints((prev) => [complaint, ...prev]);
     
     addNotification({
       title: "تمت الإضافة",
-      message: `تم إضافة الشكوى رقم ${newId} بنجاح`,
+      message: `تم إضافة الشكوى رقم ${newId} بنجاح",
       type: "success"
     });
     
     setIsAddDialogOpen(false);
     
-    // إعادة تعيين نموذج الشكوى الجديدة
     setNewComplaint({
       date: new Date().toISOString().split("T")[0],
       customerName: "",
       project: "",
       unitNumber: "",
       source: "",
-      status: "new",
+      status: "جديدة",
       description: "",
       action: ""
     });
   };
-  
+
+  const handleUpdateComplaint = () => {
+    if (!selectedComplaint) return;
+    
+    const now = new Date().toISOString();
+    
+    const updatedComplaints = complaints.map(complaint => {
+      if (complaint.id === selectedComplaint.id) {
+        return {
+          ...complaint,
+          ...newComplaint,
+          updatedBy: user?.username || "مستخدم النظام",
+          updatedAt: now
+        };
+      }
+      return complaint;
+    });
+    
+    setComplaints(updatedComplaints);
+    setIsEditDialogOpen(false);
+    
+    addNotification({
+      title: "تم التحديث",
+      message: `تم تحديث الشكوى رقم ${selectedComplaint.id} بنجاح",
+      type: "success"
+    });
+  };
+
+  const handleDeleteComplaint = () => {
+    if (!selectedComplaint) return;
+    
+    const filteredComplaints = complaints.filter(
+      complaint => complaint.id !== selectedComplaint.id
+    );
+    
+    setComplaints(filteredComplaints);
+    setIsDeleteDialogOpen(false);
+    
+    addNotification({
+      title: "تم الحذف",
+      message: `تم حذف الشكوى رقم ${selectedComplaint.id} بنجاح",
+      type: "success"
+    });
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('ar-SA', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(date);
+  };
+
   return (
     <Layout>
       <div className="space-y-6">
@@ -416,9 +513,17 @@ export default function Complaints() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Button variant="outline" size="sm">
-                            عرض التفاصيل
-                          </Button>
+                          <div className="flex space-x-2">
+                            <Button variant="ghost" size="icon" onClick={() => handleViewComplaint(complaint)}>
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleEditSetup(complaint)}>
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleDeleteSetup(complaint)}>
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))
@@ -429,6 +534,235 @@ export default function Complaints() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+        <DialogContent className="max-w-3xl">
+          {selectedComplaint && (
+            <>
+              <DialogHeader>
+                <DialogTitle>تفاصيل الشكوى رقم {selectedComplaint.id}</DialogTitle>
+                <DialogDescription>
+                  تاريخ التسجيل: {formatDate(selectedComplaint.createdAt)}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+                <div className="space-y-2">
+                  <h4 className="font-medium text-sm">اسم العميل</h4>
+                  <p className="p-2 bg-muted rounded-md">{selectedComplaint.customerName}</p>
+                </div>
+                
+                <div className="space-y-2">
+                  <h4 className="font-medium text-sm">المشروع</h4>
+                  <p className="p-2 bg-muted rounded-md">{selectedComplaint.project}</p>
+                </div>
+                
+                <div className="space-y-2">
+                  <h4 className="font-medium text-sm">رقم الوحدة</h4>
+                  <p className="p-2 bg-muted rounded-md">{selectedComplaint.unitNumber}</p>
+                </div>
+                
+                <div className="space-y-2">
+                  <h4 className="font-medium text-sm">مصدر الشكوى</h4>
+                  <p className="p-2 bg-muted rounded-md">{selectedComplaint.source}</p>
+                </div>
+                
+                <div className="space-y-2">
+                  <h4 className="font-medium text-sm">الحالة</h4>
+                  <div className={`p-2 rounded-md ${
+                    selectedComplaint.status === "تم الحل" || selectedComplaint.status === "مغلقة"
+                      ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
+                      : selectedComplaint.status === "قيد المعالجة"
+                      ? "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400"
+                      : selectedComplaint.status === "معلقة"
+                      ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400"
+                      : "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
+                  }`}>
+                    {selectedComplaint.status}
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <h4 className="font-medium text-sm">المدة</h4>
+                  <p className="p-2 bg-muted rounded-md">{selectedComplaint.duration} يوم</p>
+                </div>
+                
+                <div className="space-y-2 md:col-span-2">
+                  <h4 className="font-medium text-sm">تفاصيل الشكوى</h4>
+                  <p className="p-2 bg-muted rounded-md min-h-[80px]">{selectedComplaint.description}</p>
+                </div>
+                
+                <div className="space-y-2 md:col-span-2">
+                  <h4 className="font-medium text-sm">الإجراء المتخذ</h4>
+                  <p className="p-2 bg-muted rounded-md min-h-[80px]">{selectedComplaint.action}</p>
+                </div>
+                
+                <div className="space-y-2 md:col-span-2">
+                  <h4 className="font-medium text-sm">معلومات الإنشاء والتحديث</h4>
+                  <div className="p-3 bg-muted rounded-md space-y-2">
+                    <p>تم الإنشاء بواسطة: <span className="font-medium">{selectedComplaint.createdBy}</span></p>
+                    {selectedComplaint.updatedBy && (
+                      <p>تم التحديث بواسطة: <span className="font-medium">{selectedComplaint.updatedBy}</span> بتاريخ {formatDate(selectedComplaint.updatedAt as string)}</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button onClick={() => setIsViewDialogOpen(false)}>إغلاق</Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>تعديل الشكوى رقم {selectedComplaint?.id}</DialogTitle>
+            <DialogDescription>
+              قم بتعديل بيانات الشكوى
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-date">التاريخ</Label>
+              <Input
+                id="edit-date"
+                type="date"
+                value={newComplaint.date}
+                onChange={(e) => handleNewComplaintChange("date", e.target.value)}
+                required
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="edit-customerName">اسم العميل</Label>
+              <Input
+                id="edit-customerName"
+                value={newComplaint.customerName}
+                onChange={(e) => handleNewComplaintChange("customerName", e.target.value)}
+                placeholder="أدخل اسم العميل"
+                required
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="edit-project">المشروع</Label>
+              <Select
+                value={newComplaint.project}
+                onValueChange={(value) => handleNewComplaintChange("project", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="اختر المشروع" />
+                </SelectTrigger>
+                <SelectContent>
+                  {projects.map((project) => (
+                    <SelectItem key={project.value} value={project.label}>
+                      {project.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="edit-unitNumber">رقم الوحدة / العمارة</Label>
+              <Input
+                id="edit-unitNumber"
+                value={newComplaint.unitNumber}
+                onChange={(e) => handleNewComplaintChange("unitNumber", e.target.value)}
+                placeholder="أدخل رقم الوحدة"
+                required
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="edit-source">مصدر الشكوى</Label>
+              <Select
+                value={newComplaint.source}
+                onValueChange={(value) => handleNewComplaintChange("source", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="اختر مصدر الشكوى" />
+                </SelectTrigger>
+                <SelectContent>
+                  {complaintSources.map((source) => (
+                    <SelectItem key={source.value} value={source.label}>
+                      {source.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="edit-status">الحالة</Label>
+              <Select
+                value={newComplaint.status}
+                onValueChange={(value) => handleNewComplaintChange("status", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="اختر حالة الشكوى" />
+                </SelectTrigger>
+                <SelectContent>
+                  {complaintStatuses.map((status) => (
+                    <SelectItem key={status.value} value={status.label}>
+                      {status.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="edit-description">تفاصيل الشكوى</Label>
+              <Textarea
+                id="edit-description"
+                value={newComplaint.description}
+                onChange={(e) => handleNewComplaintChange("description", e.target.value)}
+                placeholder="أدخل تفاصيل الشكوى"
+                required
+                className="min-h-[80px]"
+              />
+            </div>
+            
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="edit-action">الإجراء المتخذ</Label>
+              <Textarea
+                id="edit-action"
+                value={newComplaint.action}
+                onChange={(e) => handleNewComplaintChange("action", e.target.value)}
+                placeholder="أدخل الإجراء المتخذ (إن وجد)"
+                className="min-h-[80px]"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              إلغاء
+            </Button>
+            <Button type="button" onClick={handleUpdateComplaint}>
+              حفظ التعديلات
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>هل أنت متأكد من حذف هذه الشكوى؟</AlertDialogTitle>
+            <AlertDialogDescription>
+              سيتم حذف الشكوى رقم {selectedComplaint?.id} نهائيًا. هذا الإجراء لا يمكن التراجع عنه.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteComplaint} className="bg-red-500 hover:bg-red-600">
+              نعم، حذف الشكوى
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Layout>
   );
 }
