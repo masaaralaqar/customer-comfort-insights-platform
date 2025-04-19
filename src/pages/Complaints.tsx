@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import Layout from "@/components/layout/Layout";
 import { useAuth } from "@/context/AuthContext";
@@ -72,7 +73,10 @@ const complaintsDummyData = [
     description: "تعطل في نظام التكييف المركزي",
     action: "تم جدولة زيارة فني التكييف",
     duration: 1,
-    createdBy: "مدير النظام"
+    createdBy: "مدير النظام",
+    createdAt: "2025-04-14T14:20:00", // Added missing required field
+    updatedBy: null,
+    updatedAt: null
   },
   {
     id: "1003",
@@ -85,7 +89,10 @@ const complaintsDummyData = [
     description: "مشكلة في بوابة الجراج لا تفتح بالريموت",
     action: "بانتظار وصول قطع الغيار",
     duration: 3,
-    createdBy: "موظف خدمة العملاء"
+    createdBy: "موظف خدمة العملاء",
+    createdAt: "2025-04-13T09:15:00", // Added missing required field
+    updatedBy: null,
+    updatedAt: null
   }
 ];
 
