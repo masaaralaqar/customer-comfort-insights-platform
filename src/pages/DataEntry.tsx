@@ -1,139 +1,126 @@
 
 import { useState } from "react";
 import Layout from "@/components/layout/Layout";
-import { useNotification } from "@/context/NotificationContext";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useMetrics } from "@/context/MetricsContext";
+import { useNotification } from "@/context/NotificationContext";
 
 export default function DataEntry() {
-  const [periodType, setPeriodType] = useState<"weekly" | "yearly">("weekly");
+  const { metrics, qualityData, npsData, callsData, updateMetric, updateQualityData, updateNPSData, updateCallsData } = useMetrics();
   const { addNotification } = useNotification();
+  const [activeTab, setActiveTab] = useState("metrics");
   
-  // بيانات NPS
-  const [npsData, setNpsData] = useState({
-    newCustomersNPS: "",
-    firstYearNPS: "",
-    longTermNPS: "",
-    deliveryQuality: "",
-    maintenanceQuality: "",
-    responseTime: "",
-    callResponseRate: "",
-    customerSatisfaction: "",
-    closingSpeed: "",
-    salesContribution: "",
-    conversionRate: "",
-    facilityManagement: "",
-    reopenRequests: "",
-    deliverySatisfaction: "",
-    recommendedCustomers: "",
-  });
+  // نسخة عمل للتعديلات
+  const [workingMetrics, setWorkingMetrics] = useState(metrics.map(metric => ({ ...metric })));
+  const [workingQualityData, setWorkingQualityData] = useState(qualityData.map(item => ({ ...item })));
+  const [workingNPSData, setWorkingNPSData] = useState(npsData.map(item => ({ ...item })));
+  const [workingCallsData, setWorkingCallsData] = useState(callsData.map(item => ({ ...item })));
 
-  // بيانات خدمة العملاء
-  const [customerServiceData, setCustomerServiceData] = useState({
-    interestedCustomers: "",
-    futureProjectsInterested: "",
-    officeInterested: "",
-    inquiries: "",
-    maintenanceRequests: "",
-    contactRequests: "",
-    complaints: "",
-    totalCalls: "",
-  });
-  
-  // بيانات استفسارات العملاء
-  const [inquiryData, setInquiryData] = useState({
-    soldProjects: "",
-    apartmentRentals: "",
-    deedInquiries: "",
-    documentRequests: "",
-    generalInquiries: "",
-  });
-  
-  // بيانات طلبات الصيانة
-  const [maintenanceRequestsData, setMaintenanceRequestsData] = useState({
-    cancelled: "",
-    resolved: "",
-    inProgress: "",
-  });
-  
-  // بيانات رضا العملاء عن الصيانة
-  const [maintenanceSatisfactionData, setMaintenanceSatisfactionData] = useState({
-    servicesSatisfaction: "",
-    closingTimeSatisfaction: "",
-    firstTimeResolution: "",
-    feedback: "",
-  });
-
-  // معالجة تغيير القيم في النماذج
-  const handleNPSChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setNpsData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleCustomerServiceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setCustomerServiceData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleInquiryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setInquiryData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleMaintenanceRequestsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setMaintenanceRequestsData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleMaintenanceSatisfactionChange = (
-    name: string,
-    value: string
-  ) => {
-    setMaintenanceSatisfactionData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleFeedbackChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setMaintenanceSatisfactionData((prev) => ({ ...prev, feedback: e.target.value }));
-  };
-
-  const handleNPSSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // هنا يتم إرسال البيانات إلى قاعدة البيانات
-    addNotification({
-      title: "تم حفظ البيانات",
-      message: `تم حفظ بيانات مقاييس NPS والجودة بنجاح (${periodType})`,
-      type: "success",
+  // تعديل المؤشرات
+  const handleMetricChange = (index: number, field: keyof typeof workingMetrics[0], value: string | number | boolean) => {
+    setWorkingMetrics(prev => {
+      const newMetrics = [...prev];
+      // @ts-ignore - تجاهل خطأ TypeScript هنا لأننا نعلم أن الحقل موجود
+      newMetrics[index][field] = value;
+      
+      // التحقق من تحقيق الهدف
+      if (field === 'value' || field === 'target') {
+        const metricValue = parseFloat(newMetrics[index].value.toString().replace('%', '').replace(' ثانية', '').replace(' يوم', ''));
+        const targetValue = parseFloat(newMetrics[index].target.toString().replace('%', '').replace(' ثانية', '').replace(' يوم', ''));
+        
+        if (!isNaN(metricValue) && !isNaN(targetValue)) {
+          const isLowerBetter = newMetrics[index].isLowerBetter;
+          newMetrics[index].reachedTarget = isLowerBetter 
+            ? metricValue <= targetValue 
+            : metricValue >= targetValue;
+        }
+      }
+      
+      return newMetrics;
     });
   };
 
-  const handleCustomerServiceSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // هنا يتم إرسال بيانات خدمة العملاء إلى قاعدة البيانات
-    addNotification({
-      title: "تم حفظ البيانات",
-      message: `تم حفظ بيانات خدمة العملاء بنجاح (${periodType})`,
-      type: "success",
+  // تعديل بيانات الجودة
+  const handleQualityDataChange = (index: number, field: keyof typeof workingQualityData[0], value: string | number) => {
+    setWorkingQualityData(prev => {
+      const newData = [...prev];
+      // @ts-ignore
+      newData[index][field] = field === 'week' ? value : Number(value);
+      return newData;
     });
   };
 
-  const handleMaintenanceSatisfactionSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // هنا يتم إرسال بيانات رضا العملاء عن الصيانة إلى قاعدة البيانات
+  // تعديل بيانات الترشيح
+  const handleNPSDataChange = (index: number, field: keyof typeof workingNPSData[0], value: string | number) => {
+    setWorkingNPSData(prev => {
+      const newData = [...prev];
+      // @ts-ignore
+      newData[index][field] = field === 'week' ? value : Number(value);
+      return newData;
+    });
+  };
+
+  // تعديل بيانات المكالمات
+  const handleCallsDataChange = (index: number, field: keyof typeof workingCallsData[0], value: string | number) => {
+    setWorkingCallsData(prev => {
+      const newData = [...prev];
+      // @ts-ignore
+      newData[index][field] = field === 'category' ? value : Number(value);
+      return newData;
+    });
+  };
+
+  // حفظ التغييرات
+  const saveMetrics = () => {
+    workingMetrics.forEach((metric, index) => {
+      updateMetric(index, metric);
+    });
+    
     addNotification({
-      title: "تم حفظ البيانات",
-      message: `تم حفظ بيانات رضا العملاء عن الصيانة بنجاح (${periodType})`,
-      type: "success",
+      title: "تم الحفظ",
+      message: "تم حفظ تغييرات المؤشرات بنجاح",
+      type: "success"
+    });
+  };
+
+  const saveQualityData = () => {
+    workingQualityData.forEach((data, index) => {
+      updateQualityData(index, data);
+    });
+    
+    addNotification({
+      title: "تم الحفظ",
+      message: "تم حفظ تغييرات بيانات الجودة بنجاح",
+      type: "success"
+    });
+  };
+
+  const saveNPSData = () => {
+    workingNPSData.forEach((data, index) => {
+      updateNPSData(index, data);
+    });
+    
+    addNotification({
+      title: "تم الحفظ",
+      message: "تم حفظ تغييرات بيانات الترشيح بنجاح",
+      type: "success"
+    });
+  };
+
+  const saveCallsData = () => {
+    workingCallsData.forEach((data, index) => {
+      updateCallsData(index, data);
+    });
+    
+    addNotification({
+      title: "تم الحفظ",
+      message: "تم حفظ تغييرات بيانات المكالمات بنجاح",
+      type: "success"
     });
   };
 
@@ -141,573 +128,272 @@ export default function DataEntry() {
     <Layout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">إدخال البيانات</h1>
-          <div className="flex gap-2">
-            <Button
-              variant={periodType === "weekly" ? "default" : "outline"}
-              onClick={() => setPeriodType("weekly")}
-              className="min-w-[120px]"
-            >
-              بيانات أسبوعية
-            </Button>
-            <Button
-              variant={periodType === "yearly" ? "default" : "outline"}
-              onClick={() => setPeriodType("yearly")}
-              className="min-w-[120px]"
-            >
-              بيانات سنوية
-            </Button>
-          </div>
+          <h1 className="text-2xl font-bold">إدخال البيانات والمؤشرات</h1>
         </div>
 
-        <Tabs defaultValue="nps" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="nps">مقاييس NPS والجودة</TabsTrigger>
-            <TabsTrigger value="customer-service">خدمة العملاء</TabsTrigger>
-            <TabsTrigger value="maintenance">رضا العملاء عن الصيانة</TabsTrigger>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+          <TabsList className="grid grid-cols-4 w-full">
+            <TabsTrigger value="metrics">مؤشرات الأداء</TabsTrigger>
+            <TabsTrigger value="quality">بيانات الجودة</TabsTrigger>
+            <TabsTrigger value="nps">بيانات الترشيح</TabsTrigger>
+            <TabsTrigger value="calls">بيانات المكالمات</TabsTrigger>
           </TabsList>
-          
-          <TabsContent value="nps" className="mt-6">
+
+          <TabsContent value="metrics" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>مقاييس NPS والجودة ({periodType === "weekly" ? "أسبوعية" : "سنوية"})</CardTitle>
-                <CardDescription>أدخل قيم مقاييس الأداء لهذه الفترة</CardDescription>
+                <CardTitle>تحديث مؤشرات الأداء</CardTitle>
               </CardHeader>
-              <CardContent>
-                <form onSubmit={handleNPSSubmit} className="space-y-6">
-                  <div className="form-grid">
-                    <div className="space-y-2">
-                      <Label htmlFor="newCustomersNPS">نسبة الترشيح للعملاء الجدد</Label>
-                      <div className="flex items-center">
-                        <Input
-                          id="newCustomersNPS"
-                          name="newCustomersNPS"
-                          type="number"
-                          value={npsData.newCustomersNPS}
-                          onChange={handleNPSChange}
-                          required
-                        />
-                        <span className="mx-2 text-muted-foreground">الهدف: 65%</span>
+              <CardContent className="space-y-4">
+                <div className="bg-muted/50 p-4 rounded-md mb-4">
+                  <p className="text-sm text-muted-foreground">قم بتحديث قيم المؤشرات. كل التغييرات ستنعكس في لوحة التحكم الرئيسية بعد الحفظ.</p>
+                </div>
+                
+                <div className="space-y-6">
+                  {workingMetrics.map((metric, index) => (
+                    <div key={index} className="border rounded-md p-4 space-y-3">
+                      <h3 className="font-medium text-lg">{metric.title}</h3>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor={`value-${index}`}>القيمة الحالية</Label>
+                          <Input
+                            id={`value-${index}`}
+                            value={metric.value}
+                            onChange={(e) => handleMetricChange(index, 'value', e.target.value)}
+                          />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor={`target-${index}`}>القيمة المستهدفة</Label>
+                          <Input
+                            id={`target-${index}`}
+                            value={metric.target}
+                            onChange={(e) => handleMetricChange(index, 'target', e.target.value)}
+                          />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor={`change-${index}`}>نسبة التغيير</Label>
+                          <Input
+                            id={`change-${index}`}
+                            type="number"
+                            step="0.1"
+                            value={metric.change}
+                            onChange={(e) => handleMetricChange(index, 'change', parseFloat(e.target.value))}
+                          />
+                        </div>
+                        
+                        <div className="space-y-2 md:col-span-3">
+                          <div className="flex flex-wrap gap-4">
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                id={`isPositive-${index}`}
+                                checked={metric.isPositive}
+                                onChange={(e) => handleMetricChange(index, 'isPositive', e.target.checked)}
+                                className="h-4 w-4"
+                              />
+                              <Label htmlFor={`isPositive-${index}`}>التغيير إيجابي</Label>
+                            </div>
+                            
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                id={`isLowerBetter-${index}`}
+                                checked={metric.isLowerBetter}
+                                onChange={(e) => handleMetricChange(index, 'isLowerBetter', e.target.checked)}
+                                className="h-4 w-4"
+                              />
+                              <Label htmlFor={`isLowerBetter-${index}`}>القيمة الأقل أفضل</Label>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="firstYearNPS">نسبة الترشيح بعد السنة الأولى</Label>
-                      <div className="flex items-center">
-                        <Input
-                          id="firstYearNPS"
-                          name="firstYearNPS"
-                          type="number"
-                          value={npsData.firstYearNPS}
-                          onChange={handleNPSChange}
-                          required
-                        />
-                        <span className="mx-2 text-muted-foreground">الهدف: 65%</span>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="longTermNPS">نسبة الترشيح للعملاء القدامى</Label>
-                      <div className="flex items-center">
-                        <Input
-                          id="longTermNPS"
-                          name="longTermNPS"
-                          type="number"
-                          value={npsData.longTermNPS}
-                          onChange={handleNPSChange}
-                          required
-                        />
-                        <span className="mx-2 text-muted-foreground">الهدف: 30%</span>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="deliveryQuality">جودة التسليم</Label>
-                      <div className="flex items-center">
-                        <Input
-                          id="deliveryQuality"
-                          name="deliveryQuality"
-                          type="number"
-                          value={npsData.deliveryQuality}
-                          onChange={handleNPSChange}
-                          required
-                        />
-                        <span className="mx-2 text-muted-foreground">الهدف: 100%</span>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="maintenanceQuality">جودة الصيانة</Label>
-                      <div className="flex items-center">
-                        <Input
-                          id="maintenanceQuality"
-                          name="maintenanceQuality"
-                          type="number"
-                          value={npsData.maintenanceQuality}
-                          onChange={handleNPSChange}
-                          required
-                        />
-                        <span className="mx-2 text-muted-foreground">الهدف: 100%</span>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="responseTime">عدد الثواني للرد</Label>
-                      <div className="flex items-center">
-                        <Input
-                          id="responseTime"
-                          name="responseTime"
-                          type="number"
-                          step="0.1"
-                          value={npsData.responseTime}
-                          onChange={handleNPSChange}
-                          required
-                        />
-                        <span className="mx-2 text-muted-foreground">الهدف: 3 ثواني</span>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="callResponseRate">معدل الرد على المكالمات</Label>
-                      <div className="flex items-center">
-                        <Input
-                          id="callResponseRate"
-                          name="callResponseRate"
-                          type="number"
-                          value={npsData.callResponseRate}
-                          onChange={handleNPSChange}
-                          required
-                        />
-                        <span className="mx-2 text-muted-foreground">الهدف: 20%</span>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="customerSatisfaction">راحة العميل (CSAT)</Label>
-                      <div className="flex items-center">
-                        <Input
-                          id="customerSatisfaction"
-                          name="customerSatisfaction"
-                          type="number"
-                          value={npsData.customerSatisfaction}
-                          onChange={handleNPSChange}
-                          required
-                        />
-                        <span className="mx-2 text-muted-foreground">الهدف: 70%</span>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="closingSpeed">سرعة إغلاق الطلبات (أيام)</Label>
-                      <div className="flex items-center">
-                        <Input
-                          id="closingSpeed"
-                          name="closingSpeed"
-                          type="number"
-                          step="0.1"
-                          value={npsData.closingSpeed}
-                          onChange={handleNPSChange}
-                          required
-                        />
-                        <span className="mx-2 text-muted-foreground">الهدف: 3 أيام</span>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="salesContribution">نسبة المساهمة في المبيعات</Label>
-                      <div className="flex items-center">
-                        <Input
-                          id="salesContribution"
-                          name="salesContribution"
-                          type="number"
-                          value={npsData.salesContribution}
-                          onChange={handleNPSChange}
-                          required
-                        />
-                        <span className="mx-2 text-muted-foreground">الهدف: 5%</span>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="conversionRate">معدل التحول</Label>
-                      <div className="flex items-center">
-                        <Input
-                          id="conversionRate"
-                          name="conversionRate"
-                          type="number"
-                          value={npsData.conversionRate}
-                          onChange={handleNPSChange}
-                          required
-                        />
-                        <span className="mx-2 text-muted-foreground">الهدف: 2%</span>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="facilityManagement">جودة إدارة المرافق</Label>
-                      <div className="flex items-center">
-                        <Input
-                          id="facilityManagement"
-                          name="facilityManagement"
-                          type="number"
-                          value={npsData.facilityManagement}
-                          onChange={handleNPSChange}
-                          required
-                        />
-                        <span className="mx-2 text-muted-foreground">الهدف: 80%</span>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="reopenRequests">عدد إعادة فتح طلب</Label>
-                      <div className="flex items-center">
-                        <Input
-                          id="reopenRequests"
-                          name="reopenRequests"
-                          type="number"
-                          value={npsData.reopenRequests}
-                          onChange={handleNPSChange}
-                          required
-                        />
-                        <span className="mx-2 text-muted-foreground">الهدف: 0</span>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="deliverySatisfaction">رضا التسليم</Label>
-                      <div className="flex items-center">
-                        <Input
-                          id="deliverySatisfaction"
-                          name="deliverySatisfaction"
-                          type="number"
-                          value={npsData.deliverySatisfaction}
-                          onChange={handleNPSChange}
-                          required
-                        />
-                        <span className="mx-2 text-muted-foreground">الهدف: 80%</span>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="recommendedCustomers">عدد العملاء المرشحين</Label>
-                      <div className="flex items-center">
-                        <Input
-                          id="recommendedCustomers"
-                          name="recommendedCustomers"
-                          type="number"
-                          value={npsData.recommendedCustomers}
-                          onChange={handleNPSChange}
-                          required
-                        />
-                        <span className="mx-2 text-muted-foreground">الهدف: 584</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <Button type="submit" className="w-full">حفظ بيانات NPS والجودة</Button>
-                </form>
+                  ))}
+                </div>
+                
+                <Button onClick={saveMetrics} className="mt-6">حفظ التغييرات</Button>
               </CardContent>
             </Card>
           </TabsContent>
-          
-          <TabsContent value="customer-service" className="mt-6">
+
+          <TabsContent value="quality" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>بيانات خدمة العملاء ({periodType === "weekly" ? "أسبوعية" : "سنوية"})</CardTitle>
-                <CardDescription>أدخل بيانات خدمة العملاء لهذه الفترة</CardDescription>
+                <CardTitle>تحديث بيانات الجودة</CardTitle>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleCustomerServiceSubmit} className="space-y-6">
-                  <div>
-                    <h3 className="text-lg font-semibold mb-4">فئة المكالمات</h3>
-                    <div className="form-grid">
-                      <div className="space-y-2">
-                        <Label htmlFor="interestedCustomers">عملاء مهتمين</Label>
-                        <Input
-                          id="interestedCustomers"
-                          name="interestedCustomers"
-                          type="number"
-                          value={customerServiceData.interestedCustomers}
-                          onChange={handleCustomerServiceChange}
-                          required
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="futureProjectsInterested">مهتمين مشاريع قادمة</Label>
-                        <Input
-                          id="futureProjectsInterested"
-                          name="futureProjectsInterested"
-                          type="number"
-                          value={customerServiceData.futureProjectsInterested}
-                          onChange={handleCustomerServiceChange}
-                          required
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="officeInterested">مهتمين مكاتب</Label>
-                        <Input
-                          id="officeInterested"
-                          name="officeInterested"
-                          type="number"
-                          value={customerServiceData.officeInterested}
-                          onChange={handleCustomerServiceChange}
-                          required
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="inquiries">استفسارات</Label>
-                        <Input
-                          id="inquiries"
-                          name="inquiries"
-                          type="number"
-                          value={customerServiceData.inquiries}
-                          onChange={handleCustomerServiceChange}
-                          required
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="maintenanceRequests">طلبات صيانة</Label>
-                        <Input
-                          id="maintenanceRequests"
-                          name="maintenanceRequests"
-                          type="number"
-                          value={customerServiceData.maintenanceRequests}
-                          onChange={handleCustomerServiceChange}
-                          required
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="contactRequests">طلبات تواصل</Label>
-                        <Input
-                          id="contactRequests"
-                          name="contactRequests"
-                          type="number"
-                          value={customerServiceData.contactRequests}
-                          onChange={handleCustomerServiceChange}
-                          required
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="complaints">شكاوى</Label>
-                        <Input
-                          id="complaints"
-                          name="complaints"
-                          type="number"
-                          value={customerServiceData.complaints}
-                          onChange={handleCustomerServiceChange}
-                          required
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="totalCalls">إجمالي المكالمات</Label>
-                        <Input
-                          id="totalCalls"
-                          name="totalCalls"
-                          type="number"
-                          value={customerServiceData.totalCalls}
-                          onChange={handleCustomerServiceChange}
-                          required
-                        />
+                <div className="bg-muted/50 p-4 rounded-md mb-4">
+                  <p className="text-sm text-muted-foreground">تحديث بيانات الجودة للرسوم البيانية</p>
+                </div>
+                
+                <div className="space-y-6">
+                  {workingQualityData.map((item, index) => (
+                    <div key={index} className="border rounded-md p-4 space-y-3">
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor={`week-quality-${index}`}>الأسبوع</Label>
+                          <Input
+                            id={`week-quality-${index}`}
+                            value={item.week}
+                            onChange={(e) => handleQualityDataChange(index, 'week', e.target.value)}
+                          />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor={`facilityManagement-${index}`}>جودة إدارة المرافق (%)</Label>
+                          <Input
+                            id={`facilityManagement-${index}`}
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={item.facilityManagement}
+                            onChange={(e) => handleQualityDataChange(index, 'facilityManagement', e.target.value)}
+                          />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor={`maintenance-${index}`}>جودة الصيانة (%)</Label>
+                          <Input
+                            id={`maintenance-${index}`}
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={item.maintenance}
+                            onChange={(e) => handleQualityDataChange(index, 'maintenance', e.target.value)}
+                          />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor={`delivery-${index}`}>جودة التسليم (%)</Label>
+                          <Input
+                            id={`delivery-${index}`}
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={item.delivery}
+                            onChange={(e) => handleQualityDataChange(index, 'delivery', e.target.value)}
+                          />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  
-                  <div>
-                    <h3 className="text-lg font-semibold mb-4">فئة الاستفسارات</h3>
-                    <div className="form-grid">
-                      <div className="space-y-2">
-                        <Label htmlFor="soldProjects">مشاريع مباعة</Label>
-                        <Input
-                          id="soldProjects"
-                          name="soldProjects"
-                          type="number"
-                          value={inquiryData.soldProjects}
-                          onChange={handleInquiryChange}
-                          required
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="apartmentRentals">إيجارات شقق</Label>
-                        <Input
-                          id="apartmentRentals"
-                          name="apartmentRentals"
-                          type="number"
-                          value={inquiryData.apartmentRentals}
-                          onChange={handleInquiryChange}
-                          required
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="deedInquiries">استفسارات الصكوك</Label>
-                        <Input
-                          id="deedInquiries"
-                          name="deedInquiries"
-                          type="number"
-                          value={inquiryData.deedInquiries}
-                          onChange={handleInquiryChange}
-                          required
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="documentRequests">طلب أوراق</Label>
-                        <Input
-                          id="documentRequests"
-                          name="documentRequests"
-                          type="number"
-                          value={inquiryData.documentRequests}
-                          onChange={handleInquiryChange}
-                          required
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="generalInquiries">استفسارات عامة</Label>
-                        <Input
-                          id="generalInquiries"
-                          name="generalInquiries"
-                          type="number"
-                          value={inquiryData.generalInquiries}
-                          onChange={handleInquiryChange}
-                          required
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <h3 className="text-lg font-semibold mb-4">فئة طلبات الصيانة</h3>
-                    <div className="form-grid">
-                      <div className="space-y-2">
-                        <Label htmlFor="cancelled">تم الإلغاء</Label>
-                        <Input
-                          id="cancelled"
-                          name="cancelled"
-                          type="number"
-                          value={maintenanceRequestsData.cancelled}
-                          onChange={handleMaintenanceRequestsChange}
-                          required
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="resolved">تم الحل</Label>
-                        <Input
-                          id="resolved"
-                          name="resolved"
-                          type="number"
-                          value={maintenanceRequestsData.resolved}
-                          onChange={handleMaintenanceRequestsChange}
-                          required
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="inProgress">قيد المعالجة</Label>
-                        <Input
-                          id="inProgress"
-                          name="inProgress"
-                          type="number"
-                          value={maintenanceRequestsData.inProgress}
-                          onChange={handleMaintenanceRequestsChange}
-                          required
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <Button type="submit" className="w-full">حفظ بيانات خدمة العملاء</Button>
-                </form>
+                  ))}
+                </div>
+                
+                <Button onClick={saveQualityData} className="mt-6">حفظ التغييرات</Button>
               </CardContent>
             </Card>
           </TabsContent>
-          
-          <TabsContent value="maintenance" className="mt-6">
+
+          <TabsContent value="nps" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>رضا العملاء عن الصيانة ({periodType === "weekly" ? "أسبوعية" : "سنوية"})</CardTitle>
-                <CardDescription>سجل مستوى رضا العملاء عن خدمات الصيانة</CardDescription>
+                <CardTitle>تحديث بيانات الترشيح</CardTitle>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleMaintenanceSatisfactionSubmit} className="space-y-6">
-                  <div className="form-grid">
-                    <div className="space-y-2">
-                      <Label htmlFor="servicesSatisfaction">الرضا عن الخدمات</Label>
-                      <Select
-                        value={maintenanceSatisfactionData.servicesSatisfaction}
-                        onValueChange={(value) => handleMaintenanceSatisfactionChange("servicesSatisfaction", value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="اختر مستوى الرضا" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="very_satisfied">راضي جداً</SelectItem>
-                          <SelectItem value="satisfied">راضي</SelectItem>
-                          <SelectItem value="neutral">محايد</SelectItem>
-                          <SelectItem value="dissatisfied">غير راضي</SelectItem>
-                          <SelectItem value="very_dissatisfied">غير راضي جداً</SelectItem>
-                        </SelectContent>
-                      </Select>
+                <div className="bg-muted/50 p-4 rounded-md mb-4">
+                  <p className="text-sm text-muted-foreground">تحديث بيانات نسب الترشيح للرسوم البيانية</p>
+                </div>
+                
+                <div className="space-y-6">
+                  {workingNPSData.map((item, index) => (
+                    <div key={index} className="border rounded-md p-4 space-y-3">
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor={`week-nps-${index}`}>الأسبوع</Label>
+                          <Input
+                            id={`week-nps-${index}`}
+                            value={item.week}
+                            onChange={(e) => handleNPSDataChange(index, 'week', e.target.value)}
+                          />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor={`newCustomers-${index}`}>نسبة الترشيح للعملاء الجدد (%)</Label>
+                          <Input
+                            id={`newCustomers-${index}`}
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={item.newCustomers}
+                            onChange={(e) => handleNPSDataChange(index, 'newCustomers', e.target.value)}
+                          />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor={`afterFirstYear-${index}`}>نسبة الترشيح بعد السنة (%)</Label>
+                          <Input
+                            id={`afterFirstYear-${index}`}
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={item.afterFirstYear}
+                            onChange={(e) => handleNPSDataChange(index, 'afterFirstYear', e.target.value)}
+                          />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor={`longTerm-${index}`}>نسبة الترشيح للعملاء القدامى (%)</Label>
+                          <Input
+                            id={`longTerm-${index}`}
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={item.longTerm}
+                            onChange={(e) => handleNPSDataChange(index, 'longTerm', e.target.value)}
+                          />
+                        </div>
+                      </div>
                     </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="closingTimeSatisfaction">الرضا عن مدة الإغلاق</Label>
-                      <Select
-                        value={maintenanceSatisfactionData.closingTimeSatisfaction}
-                        onValueChange={(value) => handleMaintenanceSatisfactionChange("closingTimeSatisfaction", value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="اختر مستوى الرضا" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="very_satisfied">راضي جداً</SelectItem>
-                          <SelectItem value="satisfied">راضي</SelectItem>
-                          <SelectItem value="neutral">محايد</SelectItem>
-                          <SelectItem value="dissatisfied">غير راضي</SelectItem>
-                          <SelectItem value="very_dissatisfied">غير راضي جداً</SelectItem>
-                        </SelectContent>
-                      </Select>
+                  ))}
+                </div>
+                
+                <Button onClick={saveNPSData} className="mt-6">حفظ التغييرات</Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="calls" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>تحديث بيانات المكالمات</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="bg-muted/50 p-4 rounded-md mb-4">
+                  <p className="text-sm text-muted-foreground">تحديث بيانات أنواع المكالمات للرسوم البيانية</p>
+                </div>
+                
+                <div className="space-y-6">
+                  {workingCallsData.map((item, index) => (
+                    <div key={index} className="border rounded-md p-4 space-y-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor={`category-${index}`}>فئة المكالمة</Label>
+                          <Input
+                            id={`category-${index}`}
+                            value={item.category}
+                            onChange={(e) => handleCallsDataChange(index, 'category', e.target.value)}
+                          />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor={`count-${index}`}>عدد المكالمات</Label>
+                          <Input
+                            id={`count-${index}`}
+                            type="number"
+                            min="0"
+                            value={item.count}
+                            onChange={(e) => handleCallsDataChange(index, 'count', e.target.value)}
+                          />
+                        </div>
+                      </div>
                     </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="firstTimeResolution">هل تم الحل من أول مرة</Label>
-                      <Select
-                        value={maintenanceSatisfactionData.firstTimeResolution}
-                        onValueChange={(value) => handleMaintenanceSatisfactionChange("firstTimeResolution", value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="اختر الإجابة" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="yes">نعم</SelectItem>
-                          <SelectItem value="no">لا</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="feedback">أبرز الملاحظات</Label>
-                    <Textarea
-                      id="feedback"
-                      placeholder="أدخل أهم الملاحظات حول رضا العملاء عن الصيانة"
-                      value={maintenanceSatisfactionData.feedback}
-                      onChange={handleFeedbackChange}
-                      className="min-h-[120px]"
-                    />
-                  </div>
-                  
-                  <Button type="submit" className="w-full">حفظ بيانات رضا العملاء عن الصيانة</Button>
-                </form>
+                  ))}
+                </div>
+                
+                <Button onClick={saveCallsData} className="mt-6">حفظ التغييرات</Button>
               </CardContent>
             </Card>
           </TabsContent>

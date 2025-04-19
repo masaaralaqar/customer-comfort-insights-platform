@@ -30,187 +30,39 @@ import {
   BarChart as RechartsBarChart,
   Bar
 } from "recharts";
-
-// بيانات تجريبية للرسوم البيانية
-const qualityData = [
-  { week: "الأسبوع 1", facilityManagement: 89, maintenance: 90, delivery: 95 },
-  { week: "الأسبوع 2", facilityManagement: 92, maintenance: 95, delivery: 97 },
-  { week: "الأسبوع 3", facilityManagement: 93, maintenance: 94, delivery: 96 },
-  { week: "الأسبوع 4", facilityManagement: 96, maintenance: 97, delivery: 98 },
-];
-
-const npsData = [
-  { week: "الأسبوع 1", newCustomers: 60, afterFirstYear: 61, longTerm: 30 },
-  { week: "الأسبوع 2", newCustomers: 63, afterFirstYear: 64, longTerm: 32 },
-  { week: "الأسبوع 3", newCustomers: 65, afterFirstYear: 66, longTerm: 36 },
-  { week: "الأسبوع 4", newCustomers: 67, afterFirstYear: 68, longTerm: 37 },
-];
-
-const callsData = [
-  { category: "مهتمين", count: 42 },
-  { category: "مهتمين مشاريع", count: 38 },
-  { category: "طلبات صيانة", count: 65 },
-  { category: "استفسارات", count: 58 },
-  { category: "مهتمين مكاتب", count: 34 },
-  { category: "شكاوى", count: 28 },
-];
-
-// بيانات المؤشرات
-const metrics = [
-  {
-    title: "نسبة الترشيح للعملاء الجدد",
-    value: "65%",
-    target: "65%",
-    icon: <Users />,
-    change: 2.4,
-    isPositive: true,
-    reachedTarget: true,
-    isLowerBetter: false,
-  },
-  {
-    title: "نسبة الترشيح بعد السنة",
-    value: "67%",
-    target: "65%",
-    icon: <Users />,
-    change: 3.1,
-    isPositive: true,
-    reachedTarget: true,
-    isLowerBetter: false,
-  },
-  {
-    title: "نسبة الترشيح للعملاء القدامى",
-    value: "30%",
-    target: "30%",
-    icon: <Users />,
-    change: 1.8,
-    isPositive: true,
-    reachedTarget: true,
-    isLowerBetter: false,
-  },
-  {
-    title: "جودة التسليم",
-    value: "98%",
-    target: "100%",
-    icon: <Activity />,
-    change: 1.5,
-    isPositive: true,
-    reachedTarget: false,
-    isLowerBetter: false,
-  },
-  {
-    title: "جودة الصيانة",
-    value: "96%",
-    target: "100%",
-    icon: <Wrench />,
-    change: 2.8,
-    isPositive: true,
-    reachedTarget: false,
-    isLowerBetter: false,
-  },
-  {
-    title: "عدد الثواني للرد",
-    value: "2.8 ثانية",
-    target: "3 ثواني",
-    icon: <Timer />,
-    change: 5.7,
-    isPositive: false,
-    reachedTarget: true,
-    isLowerBetter: true,
-  },
-  {
-    title: "معدل الرد على المكالمات",
-    value: "18%",
-    target: "20%",
-    icon: <Phone />,
-    change: 4.3,
-    isPositive: false,
-    reachedTarget: false,
-    isLowerBetter: true,
-  },
-  {
-    title: "راحة العميل (CSAT)",
-    value: "74%",
-    target: "70%",
-    icon: <UserCheck />,
-    change: 5.7,
-    isPositive: true,
-    reachedTarget: true,
-    isLowerBetter: false,
-  },
-  {
-    title: "سرعة إغلاق طلبات الصيانة",
-    value: "2.5 يوم",
-    target: "3 أيام",
-    icon: <Clock />,
-    change: 8.2,
-    isPositive: false,
-    reachedTarget: true,
-    isLowerBetter: true,
-  },
-  {
-    title: "عدد إعادة فتح طلب",
-    value: "0",
-    target: "0",
-    icon: <FileText />,
-    change: 0,
-    isPositive: true,
-    reachedTarget: true,
-    isLowerBetter: true,
-  },
-  {
-    title: "جودة إدارة المرافق",
-    value: "80%",
-    target: "80%",
-    icon: <Briefcase />,
-    change: 1.8,
-    isPositive: true,
-    reachedTarget: true,
-    isLowerBetter: false,
-  },
-  {
-    title: "معدل التحول",
-    value: "2%",
-    target: "2%",
-    icon: <Percent />,
-    change: 1.5,
-    isPositive: true,
-    reachedTarget: true,
-    isLowerBetter: false,
-  },
-  {
-    title: "نسبة الرضا عن التسليم",
-    value: "80%",
-    target: "80%",
-    icon: <UserCheck />,
-    change: 2.3,
-    isPositive: true,
-    reachedTarget: true,
-    isLowerBetter: false,
-  },
-  {
-    title: "عدد العملاء المرشحين",
-    value: "584",
-    target: "584",
-    icon: <Users />,
-    change: 3.5,
-    isPositive: true,
-    reachedTarget: true,
-    isLowerBetter: false,
-  },
-  {
-    title: "المساهمة في المبيعات",
-    value: "5%",
-    target: "5%",
-    icon: <Percent />,
-    change: 2.1,
-    isPositive: true,
-    reachedTarget: true,
-    isLowerBetter: false,
-  },
-];
+import { useMetrics, MetricData } from "@/context/MetricsContext";
 
 export default function Dashboard() {
+  const { metrics, qualityData, npsData, callsData } = useMetrics();
   const [period, setPeriod] = useState<"weekly" | "yearly">("weekly");
+
+  // إضافة أيقونات للمؤشرات
+  const getIconForMetric = (index: number) => {
+    const icons = [
+      <Users key="users1" />,
+      <Users key="users2" />,
+      <Users key="users3" />,
+      <Activity key="activity" />,
+      <Wrench key="wrench" />,
+      <Timer key="timer" />,
+      <Phone key="phone" />,
+      <UserCheck key="usercheck1" />,
+      <Clock key="clock" />,
+      <FileText key="filetext" />,
+      <Briefcase key="briefcase" />,
+      <Percent key="percent1" />,
+      <UserCheck key="usercheck2" />,
+      <Users key="users4" />,
+      <Percent key="percent2" />
+    ];
+    return icons[index] || <Activity />;
+  };
+
+  // مؤشرات مع أيقونات
+  const metricsWithIcons = metrics.map((metric, index) => ({
+    ...metric,
+    icon: getIconForMetric(index)
+  }));
 
   return (
     <Layout>
@@ -236,7 +88,7 @@ export default function Dashboard() {
         <h2 className="text-xl font-semibold mb-2">مؤشرات الأداء الرئيسية {period === "weekly" ? "الأسبوعية" : "السنوية"}</h2>
         
         <div className="dashboard-grid">
-          {metrics.map((metric, index) => (
+          {metricsWithIcons.map((metric, index) => (
             <MetricCard
               key={index}
               title={metric.title}

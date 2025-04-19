@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 import { NotificationProvider } from "@/context/NotificationContext";
+import { MetricsProvider } from "@/context/MetricsContext";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import DataEntry from "./pages/DataEntry";
@@ -19,21 +20,23 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <NotificationProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Navigate to="/login" replace />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/data-entry" element={<DataEntry />} />
-              <Route path="/complaints" element={<Complaints />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
+        <MetricsProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Navigate to="/login" replace />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/data-entry" element={<DataEntry />} />
+                <Route path="/complaints" element={<Complaints />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </MetricsProvider>
       </NotificationProvider>
     </AuthProvider>
   </QueryClientProvider>
