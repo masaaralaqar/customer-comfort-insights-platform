@@ -656,9 +656,10 @@ export function MetricsProvider({ children }: { children: ReactNode }) {
 
   const updateCustomerServiceData = async (data: CustomerServiceData) => {
     try {
+      // حساب الإجمالي بشكل صحيح
       const total = Object.values(data.calls).reduce((sum, val) => 
-        typeof val === 'number' && val !== data.calls.total ? sum + val : sum, 0
-      );
+        typeof val === 'number' && !isNaN(val) && val >= 0 ? sum + val : sum, 0
+      ) - (data.calls.total || 0); // استثناء الإجمالي من الحساب
 
       const updatedData = {
         ...data,
@@ -667,6 +668,25 @@ export function MetricsProvider({ children }: { children: ReactNode }) {
           total: total
         }
       };
+
+      // تحديث حالة الصفحات المرتبطة
+      setPeriodData(prev => ({
+        ...prev,
+        [currentPeriod]: {
+          ...prev[currentPeriod],
+          metrics: prev[currentPeriod].metrics.map(metric => {
+            if (metric.title === "إجمالي المكالمات") {
+              return {
+                ...metric,
+                value: total.toString(),
+                change: ((total - parseFloat(metric.target)) / parseFloat(metric.target)) * 100,
+                isPositive: total >= parseFloat(metric.target)
+              };
+            }
+            return metric;
+          })
+        }
+      }));
 
       // Update local state and metrics simultaneously
       setPeriodData(prev => {
@@ -734,9 +754,58 @@ export function MetricsProvider({ children }: { children: ReactNode }) {
   };
 
   const updateMaintenanceSatisfactionData = (data: MaintenanceSatisfactionData) => {
-    const serviceQualityPercentage = calculateSatisfactionPercentage(data.serviceQuality);
-    const closureTimePercentage = calculateSatisfactionPercentage(data.closureTime);
-    const firstTimeResolutionPercentage = calculateSatisfactionPercentage(data.firstTimeResolution);
+    try {
+      const serviceQualityPercentage = calculateSatisfactionPercentage(data.serviceQuality);
+      const closureTimePercentage = calculateSatisfactionPercentage(data.closureTime);
+      const firstTimeResolutionPercentage = calculateSatisfactionPercentage(data.firstTimeResolution);
+
+      // تحديث بيانات الرضا
+      setMaintenanceSatisfaction(prev => ({
+        ...prev,
+        [currentPeriod]: {
+          ...data,
+          comments: Array.isArray(data.comments) ? data.comments : [data.comments]
+        }
+      }));
+
+      // تحديث المؤشرات المرتبطة
+      setPeriodData(prev => ({
+        ...prev,
+        [currentPeriod]: {
+          ...prev[currentPeriod],
+          metrics: prev[currentPeriod].metrics.map(metric => {
+            switch (metric.title) {
+              case "جودة الصيانة":
+                return {
+                  ...metric,
+                  value: `${serviceQualityPercentage.toFixed(1)}%`,
+                  change: serviceQualityPercentage - parseFloat(metric.target),
+                  isPositive: serviceQualityPercentage >= parseFloat(metric.target)
+                };
+              case "سرعة إغلاق طلبات الصيانة":
+                return {
+                  ...metric,
+                  value: `${closureTimePercentage.toFixed(1)}%`,
+                  change: closureTimePercentage - parseFloat(metric.target),
+                  isPositive: closureTimePercentage >= parseFloat(metric.target)
+                };
+              case "نسبة الإغلاق من أول مرة":
+                return {
+                  ...metric,
+                  value: `${firstTimeResolutionPercentage.toFixed(1)}%`,
+                  change: firstTimeResolutionPercentage - parseFloat(metric.target),
+                  isPositive: firstTimeResolutionPercentage >= parseFloat(metric.target)
+                };
+              default:
+                return metric;
+            }
+          }),
+          qualityData: prev[currentPeriod].qualityData.map(item => ({
+            ...item,
+            maintenance: serviceQualityPercentage
+          }))
+        }
+      }));
 
     // Update both states simultaneously
     setPeriodData(prev => {
