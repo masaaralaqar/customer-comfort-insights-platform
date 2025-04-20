@@ -11,16 +11,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     const data = req.body;
+    
+    // تحقق من وجود البيانات المطلوبة
+    if (!data.period) {
+      return res.status(400).json({ error: 'الفترة مطلوبة' });
+    }
+
     const result = await prisma.customerServiceData.create({
       data: {
         period: data.period,
-        complaints: data.complaints,
-        contactRequests: data.contactRequests,
-        maintenanceRequests: data.maintenanceRequests,
-        inquiries: data.inquiries,
-        officeInterested: data.officeInterested,
-        projectsInterested: data.projectsInterested,
-        customersInterested: data.customersInterested
+        complaints: data.complaints || 0,
+        contactRequests: data.contactRequests || 0,
+        maintenanceRequests: data.maintenanceRequests || 0,
+        inquiries: data.inquiries || 0,
+        officeInterested: data.officeInterested || 0,
+        projectsInterested: data.projectsInterested || 0,
+        customersInterested: data.customersInterested || 0
       }
     });
     res.status(200).json(result);

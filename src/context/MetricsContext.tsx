@@ -601,11 +601,37 @@ export function MetricsProvider({ children }: { children: ReactNode }) {
 
   const updateCustomerServiceData = async (data: CustomerServiceData) => {
     try {
-      setCustomerServiceData(prevData => ({
-        ...prevData,
-        calls: { ...data.calls },
-        inquiries: { ...data.inquiries },
-        maintenance: { ...data.maintenance }
+      const response = await fetch('/api/customerService', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          period: currentPeriod,
+          ...data.calls
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('فشل في حفظ البيانات');
+      }
+
+      const result = await response.json();
+      
+      setPeriodData(prev => ({
+        ...prev,
+        [currentPeriod]: {
+          ...prev[currentPeriod],
+          customerServiceData: result
+        }
+      }));
+
+      return result;
+    } catch (error) {
+      console.error('خطأ في حفظ البيانات:', error);
+      throw new Error('فشل في حفظ البيانات');
+    }
+  };intenance: { ...data.maintenance }
       }));
 
       const total = Object.values(data.calls).reduce((sum, val) => 
