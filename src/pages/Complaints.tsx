@@ -645,21 +645,13 @@ export default function Complaints() {
 
             <div className="space-y-2">
               <Label htmlFor="edit-project">المشروع</Label>
-              <Select
+              <Input
+                id="edit-project"
                 value={newComplaint.project}
-                onValueChange={(value) => handleNewComplaintChange("project", value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="اختر المشروع" />
-                </SelectTrigger>
-                <SelectContent>
-                  {projects.map((project) => (
-                    <SelectItem key={project.value} value={project.label}>
-                      {project.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onChange={(e) => handleNewComplaintChange("project", e.target.value)}
+                placeholder="أدخل اسم المشروع"
+                required
+              />
             </div>
 
             <div className="space-y-2">
