@@ -668,34 +668,28 @@ export function MetricsProvider({ children }: { children: ReactNode }) {
         }
       };
 
-      // Update Firestore
-      await setDoc(doc(db, 'customerService', currentPeriod), updatedData);
-
-      // Update local state
+      // Update local state immediately
       setCustomerServiceData(prev => ({
         ...prev,
-        [currentPeriod]: updatedData,
-        yearly: currentPeriod === "weekly" ? {
-          ...prev.yearly,
-          calls: Object.fromEntries(
-            Object.entries(prev.yearly.calls).map(([key, value]) => [
-              key,
-              key === "total" ? value + total : value + (updatedData.calls[key as keyof typeof updatedData.calls] || 0)
-            ])
-          ),
-          inquiries: Object.fromEntries(
-            Object.entries(prev.yearly.inquiries).map(([key, value]) => [
-              key,
-              value + (updatedData.inquiries[key as keyof typeof updatedData.inquiries] || 0)
-            ])
-          ),
-          maintenance: Object.fromEntries(
-            Object.entries(prev.yearly.maintenance).map(([key, value]) => [
-              key,
-              value + (updatedData.maintenance[key as keyof typeof updatedData.maintenance] || 0)
-            ])
-          )
-        } : prev.yearly
+        [currentPeriod]: updatedData
+      }));
+
+      // Update related metrics
+      setPeriodData(prev => ({
+        ...prev,
+        [currentPeriod]: {
+          ...prev[currentPeriod],
+          metrics: prev[currentPeriod].metrics.map(metric => {
+            if (metric.title === "إجمالي المكالمات") {
+              return {
+                ...metric,
+                value: total.toString(),
+                change: ((total - parseFloat(metric.target)) / parseFloat(metric.target)) * 100
+              };
+            }
+            return metric;
+          })
+        }
       }));
 
       return updatedData;
@@ -718,31 +712,48 @@ export function MetricsProvider({ children }: { children: ReactNode }) {
   };
 
   const updateMaintenanceSatisfactionData = (data: MaintenanceSatisfactionData) => {
+    // Update maintenance satisfaction data
     setMaintenanceSatisfaction(prev => ({
       ...prev,
-      [currentPeriod]: data,
-      yearly: currentPeriod === "weekly" ? {
-        ...prev.yearly,
-        serviceQuality: Object.fromEntries(
-          Object.entries(data.serviceQuality).map(([key, value]) => [
-            key,
-            (prev.yearly.serviceQuality[key as keyof typeof prev.yearly.serviceQuality] || 0) + value
-          ])
-        ),
-        closureTime: Object.fromEntries(
-          Object.entries(data.closureTime).map(([key, value]) => [
-            key,
-            (prev.yearly.closureTime[key as keyof typeof prev.yearly.closureTime] || 0) + value
-          ])
-        ),
-        firstTimeResolution: Object.fromEntries(
-          Object.entries(data.firstTimeResolution).map(([key, value]) => [
-            key,
-            (prev.yearly.firstTimeResolution[key as keyof typeof prev.yearly.firstTimeResolution] || 0) + value
-          ])
-        ),
-        comments: [...prev.yearly.comments, ...data.comments]
-      } : prev.yearly
+      [currentPeriod]: data
+    }));
+
+    // Update related metrics immediately
+    setPeriodData(prev => ({
+      ...prev,
+      [currentPeriod]: {
+        ...prev[currentPeriod],
+        metrics: prev[currentPeriod].metrics.map(metric => {
+          switch (metric.title) {
+            case "الرضا عن خدمات الصيانة":
+              const serviceQualityPercentage = calculateSatisfactionPercentage(data.serviceQuality);
+              return {
+                ...metric,
+                value: `${serviceQualityPercentage.toFixed(1)}%`,
+                change: serviceQualityPercentage - parseFloat(metric.target),
+                isPositive: serviceQualityPercentage >= parseFloat(metric.target)
+              };
+            case "الرضا عن مدة إغلاق الطلبات":
+              const closureTimePercentage = calculateSatisfactionPercentage(data.closureTime);
+              return {
+                ...metric,
+                value: `${closureTimePercentage.toFixed(1)}%`,
+                change: closureTimePercentage - parseFloat(metric.target),
+                isPositive: closureTimePercentage >= parseFloat(metric.target)
+              };
+            case "نسبة الإغلاق من أول مرة":
+              const firstTimeResolutionPercentage = calculateSatisfactionPercentage(data.firstTimeResolution);
+              return {
+                ...metric,
+                value: `${firstTimeResolutionPercentage.toFixed(1)}%`,
+                change: firstTimeResolutionPercentage - parseFloat(metric.target),
+                isPositive: firstTimeResolutionPercentage >= parseFloat(metric.target)
+              };
+            default:
+              return metric;
+          }
+        })
+      }
     }));
 
     // Update related metrics
