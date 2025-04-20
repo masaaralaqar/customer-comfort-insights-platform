@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { auth, db } from '@/lib/firebase';
 import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
@@ -58,17 +57,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      if (!auth) {
-        throw new Error('Firebase Auth is not initialized');
-      }
-      
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      if (!db) {
-        throw new Error('Firestore is not initialized');
+      if (!auth || !db) {
+        throw new Error('Firebase services not initialized');
       }
 
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid));
-      
+
       if (userDoc.exists()) {
         setUser({
           id: userCredential.user.uid,
