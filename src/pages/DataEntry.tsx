@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
@@ -30,6 +31,37 @@ export default function DataEntry() {
   const [workingQualityData, setWorkingQualityData] = useState(qualityData.map(item => ({ ...item })));
   const [workingNPSData, setWorkingNPSData] = useState(npsData.map(item => ({ ...item })));
   const [workingCallsData, setWorkingCallsData] = useState(callsData.map(item => ({ ...item })));
+  const [customerServiceData, setCustomerServiceData] = useState({
+    calls: {
+      complaints: 0,
+      contactRequests: 0,
+      maintenanceRequests: 0,
+      inquiries: 0,
+      officeInterested: 0,
+      projectsInterested: 0,
+      customersInterested: 0,
+      total: 0
+    },
+    inquiries: {
+      general: 0,
+      documentRequests: 0,
+      deedInquiries: 0,
+      apartmentRentals: 0,
+      soldProjects: 0
+    },
+    maintenance: {
+      cancelled: 0,
+      resolved: 0,
+      inProgress: 0
+    }
+  });
+  
+  const [maintenanceSatisfaction, setMaintenanceSatisfaction] = useState({
+    serviceQuality: 0,
+    closureTime: 0,
+    firstTimeResolution: 0,
+    comments: ""
+  });
 
   // تحديث نسخة العمل عند تغيير الفترة
   useEffect(() => {
@@ -143,11 +175,13 @@ export default function DataEntry() {
         </div>
 
         <Tabs defaultValue="metrics" className="space-y-4">
-          <TabsList className="grid grid-cols-4 w-full">
+          <TabsList className="grid grid-cols-6 w-full">
             <TabsTrigger value="metrics">مؤشرات الأداء</TabsTrigger>
             <TabsTrigger value="quality">بيانات الجودة</TabsTrigger>
             <TabsTrigger value="nps">بيانات الترشيح</TabsTrigger>
             <TabsTrigger value="calls">بيانات المكالمات</TabsTrigger>
+            <TabsTrigger value="customer-service">خدمة العملاء</TabsTrigger>
+            <TabsTrigger value="maintenance-satisfaction">رضا العملاء عن الصيانة</TabsTrigger>
           </TabsList>
 
           <TabsContent value="metrics">
@@ -324,6 +358,268 @@ export default function DataEntry() {
                       </div>
                     </div>
                   ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="customer-service">
+            <Card>
+              <CardHeader>
+                <CardTitle>إدخال بيانات خدمة العملاء {currentPeriod === "weekly" ? "الأسبوعية" : "السنوية"}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  {/* فئة المكالمات */}
+                  <div className="border rounded-lg p-4">
+                    <h3 className="font-medium mb-4">فئة المكالمات</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      <div>
+                        <Label>شكاوى</Label>
+                        <Input
+                          type="number"
+                          value={customerServiceData.calls.complaints}
+                          onChange={(e) => setCustomerServiceData(prev => ({
+                            ...prev,
+                            calls: { ...prev.calls, complaints: Number(e.target.value) }
+                          }))}
+                        />
+                      </div>
+                      <div>
+                        <Label>طلبات تواصل</Label>
+                        <Input
+                          type="number"
+                          value={customerServiceData.calls.contactRequests}
+                          onChange={(e) => setCustomerServiceData(prev => ({
+                            ...prev,
+                            calls: { ...prev.calls, contactRequests: Number(e.target.value) }
+                          }))}
+                        />
+                      </div>
+                      <div>
+                        <Label>طلبات صيانة</Label>
+                        <Input
+                          type="number"
+                          value={customerServiceData.calls.maintenanceRequests}
+                          onChange={(e) => setCustomerServiceData(prev => ({
+                            ...prev,
+                            calls: { ...prev.calls, maintenanceRequests: Number(e.target.value) }
+                          }))}
+                        />
+                      </div>
+                      <div>
+                        <Label>استفسارات</Label>
+                        <Input
+                          type="number"
+                          value={customerServiceData.calls.inquiries}
+                          onChange={(e) => setCustomerServiceData(prev => ({
+                            ...prev,
+                            calls: { ...prev.calls, inquiries: Number(e.target.value) }
+                          }))}
+                        />
+                      </div>
+                      <div>
+                        <Label>مهتمين مكاتب</Label>
+                        <Input
+                          type="number"
+                          value={customerServiceData.calls.officeInterested}
+                          onChange={(e) => setCustomerServiceData(prev => ({
+                            ...prev,
+                            calls: { ...prev.calls, officeInterested: Number(e.target.value) }
+                          }))}
+                        />
+                      </div>
+                      <div>
+                        <Label>مهتمين مشاريع قادمة</Label>
+                        <Input
+                          type="number"
+                          value={customerServiceData.calls.projectsInterested}
+                          onChange={(e) => setCustomerServiceData(prev => ({
+                            ...prev,
+                            calls: { ...prev.calls, projectsInterested: Number(e.target.value) }
+                          }))}
+                        />
+                      </div>
+                      <div>
+                        <Label>عملاء مهتمين</Label>
+                        <Input
+                          type="number"
+                          value={customerServiceData.calls.customersInterested}
+                          onChange={(e) => setCustomerServiceData(prev => ({
+                            ...prev,
+                            calls: { ...prev.calls, customersInterested: Number(e.target.value) }
+                          }))}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* فئة الاستفسارات */}
+                  <div className="border rounded-lg p-4">
+                    <h3 className="font-medium mb-4">فئة الاستفسارات</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <div>
+                        <Label>استفسارات عامة</Label>
+                        <Input
+                          type="number"
+                          value={customerServiceData.inquiries.general}
+                          onChange={(e) => setCustomerServiceData(prev => ({
+                            ...prev,
+                            inquiries: { ...prev.inquiries, general: Number(e.target.value) }
+                          }))}
+                        />
+                      </div>
+                      <div>
+                        <Label>طلب أوراق للأهمية</Label>
+                        <Input
+                          type="number"
+                          value={customerServiceData.inquiries.documentRequests}
+                          onChange={(e) => setCustomerServiceData(prev => ({
+                            ...prev,
+                            inquiries: { ...prev.inquiries, documentRequests: Number(e.target.value) }
+                          }))}
+                        />
+                      </div>
+                      <div>
+                        <Label>استفسارات عن الصكوك</Label>
+                        <Input
+                          type="number"
+                          value={customerServiceData.inquiries.deedInquiries}
+                          onChange={(e) => setCustomerServiceData(prev => ({
+                            ...prev,
+                            inquiries: { ...prev.inquiries, deedInquiries: Number(e.target.value) }
+                          }))}
+                        />
+                      </div>
+                      <div>
+                        <Label>إيجارات شقق</Label>
+                        <Input
+                          type="number"
+                          value={customerServiceData.inquiries.apartmentRentals}
+                          onChange={(e) => setCustomerServiceData(prev => ({
+                            ...prev,
+                            inquiries: { ...prev.inquiries, apartmentRentals: Number(e.target.value) }
+                          }))}
+                        />
+                      </div>
+                      <div>
+                        <Label>مشاريع مباعة</Label>
+                        <Input
+                          type="number"
+                          value={customerServiceData.inquiries.soldProjects}
+                          onChange={(e) => setCustomerServiceData(prev => ({
+                            ...prev,
+                            inquiries: { ...prev.inquiries, soldProjects: Number(e.target.value) }
+                          }))}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* فئة طلبات الصيانة */}
+                  <div className="border rounded-lg p-4">
+                    <h3 className="font-medium mb-4">فئة طلبات الصيانة</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <Label>تم الإلغاء</Label>
+                        <Input
+                          type="number"
+                          value={customerServiceData.maintenance.cancelled}
+                          onChange={(e) => setCustomerServiceData(prev => ({
+                            ...prev,
+                            maintenance: { ...prev.maintenance, cancelled: Number(e.target.value) }
+                          }))}
+                        />
+                      </div>
+                      <div>
+                        <Label>تم الحل</Label>
+                        <Input
+                          type="number"
+                          value={customerServiceData.maintenance.resolved}
+                          onChange={(e) => setCustomerServiceData(prev => ({
+                            ...prev,
+                            maintenance: { ...prev.maintenance, resolved: Number(e.target.value) }
+                          }))}
+                        />
+                      </div>
+                      <div>
+                        <Label>قيد المعالجة</Label>
+                        <Input
+                          type="number"
+                          value={customerServiceData.maintenance.inProgress}
+                          onChange={(e) => setCustomerServiceData(prev => ({
+                            ...prev,
+                            maintenance: { ...prev.maintenance, inProgress: Number(e.target.value) }
+                          }))}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="maintenance-satisfaction">
+            <Card>
+              <CardHeader>
+                <CardTitle>إدخال بيانات رضا العملاء عن الصيانة {currentPeriod === "weekly" ? "الأسبوعية" : "السنوية"}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                      <Label>الرضا عن خدمات الصيانة (%)</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={maintenanceSatisfaction.serviceQuality}
+                        onChange={(e) => setMaintenanceSatisfaction(prev => ({
+                          ...prev,
+                          serviceQuality: Number(e.target.value)
+                        }))}
+                      />
+                    </div>
+                    <div>
+                      <Label>الرضا عن مدة إغلاق الطلبات (%)</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={maintenanceSatisfaction.closureTime}
+                        onChange={(e) => setMaintenanceSatisfaction(prev => ({
+                          ...prev,
+                          closureTime: Number(e.target.value)
+                        }))}
+                      />
+                    </div>
+                    <div>
+                      <Label>نسبة الإغلاق من أول مرة (%)</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={maintenanceSatisfaction.firstTimeResolution}
+                        onChange={(e) => setMaintenanceSatisfaction(prev => ({
+                          ...prev,
+                          firstTimeResolution: Number(e.target.value)
+                        }))}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label>ملاحظات العملاء</Label>
+                    <Textarea
+                      value={maintenanceSatisfaction.comments}
+                      onChange={(e) => setMaintenanceSatisfaction(prev => ({
+                        ...prev,
+                        comments: e.target.value
+                      }))}
+                      placeholder="أدخل ملاحظات العملاء هنا"
+                      className="min-h-[100px]"
+                    />
+                  </div>
                 </div>
               </CardContent>
             </Card>
