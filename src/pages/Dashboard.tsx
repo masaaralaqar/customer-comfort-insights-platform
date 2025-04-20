@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import Layout from "@/components/layout/Layout";
+import React from 'react'; // إذا لم يكن مستورداً بالفعل
+import Layout from '@/components/layout/Layout'; // تأكد من صحة مسار الاستيراد
 import { MetricCard } from "@/components/dashboard/MetricCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
@@ -34,16 +34,17 @@ import {
 import { useMetrics, MetricData } from "@/context/MetricsContext";
 
 export default function Dashboard() {
-  const { 
-    metrics, 
-    qualityData, 
-    npsData, 
-    callsData, 
-    currentPeriod, 
-    setCurrentPeriod,
-    customerServiceData,
-    maintenanceSatisfaction 
-  } = useMetrics();
+
+    const {
+      metrics,
+      qualityData,
+      npsData,
+      callsData,
+      currentPeriod,
+      setCurrentPeriod
+   
+
+  } = useMetrics(); // ✅ تم إزالة customerServiceData و maintenanceSatisfaction من هنا
 
   const customerServiceData = {
     calls: {
