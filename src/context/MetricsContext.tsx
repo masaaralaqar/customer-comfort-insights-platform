@@ -601,8 +601,32 @@ export function MetricsProvider({ children }: { children: ReactNode }) {
 
   const updateCustomerServiceData = async (data: CustomerServiceData) => {
     try {
-      // تحديث حالة التطبيق
-      setCustomerServiceData(data);
+      // تحديث حالة التطبيق بنسخة جديدة من البيانات
+      setCustomerServiceData(prevData => ({
+        ...prevData,
+        calls: { ...data.calls },
+        inquiries: { ...data.inquiries },
+        maintenance: { ...data.maintenance }
+      }));
+      
+      // تحديث البيانات ذات الصلة في المؤشرات الأخرى
+      const newCallsData = [
+        { category: "شكاوى", count: data.calls.complaints },
+        { category: "طلبات تواصل", count: data.calls.contactRequests },
+        { category: "طلبات صيانة", count: data.calls.maintenanceRequests },
+        { category: "استفسارات", count: data.calls.inquiries },
+        { category: "مهتمين مكاتب", count: data.calls.officeInterested },
+        { category: "مهتمين مشاريع", count: data.calls.projectsInterested },
+        { category: "عملاء مهتمين", count: data.calls.customersInterested },
+      ];
+
+      setPeriodData(prev => ({
+        ...prev,
+        [currentPeriod]: {
+          ...prev[currentPeriod],
+          callsData: newCallsData
+        }
+      }));
       
       // حفظ في قاعدة البيانات
       await prisma.customerServiceData.create({
@@ -632,7 +656,42 @@ export function MetricsProvider({ children }: { children: ReactNode }) {
   };
 
   const updateMaintenanceSatisfactionData = (data: MaintenanceSatisfactionData) => {
-    setMaintenanceSatisfaction(data);
+    // تحديث حالة التطبيق بنسخة جديدة من البيانات
+    setMaintenanceSatisfaction(prevData => ({
+      ...prevData,
+      ...data
+    }));
+
+    // تحديث المؤشرات ذات الصلة
+    const maintenanceMetrics = metrics.map(metric => {
+      if (metric.title === "الرضا عن خدمات الصيانة") {
+        return {
+          ...metric,
+          value: `${data.serviceQuality}%`
+        };
+      }
+      if (metric.title === "الرضا عن مدة إغلاق الطلبات") {
+        return {
+          ...metric,
+          value: `${data.closureTime}%`
+        };
+      }
+      if (metric.title === "نسبة الإغلاق من أول مرة") {
+        return {
+          ...metric,
+          value: `${data.firstTimeResolution}%`
+        };
+      }
+      return metric;
+    });
+
+    setPeriodData(prev => ({
+      ...prev,
+      [currentPeriod]: {
+        ...prev[currentPeriod],
+        metrics: maintenanceMetrics
+      }
+    }));
   };
 
   return (
