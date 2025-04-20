@@ -177,21 +177,190 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="chart-container mt-6">
-          <h3 className="text-lg font-semibold mb-4">خدمة العملاء - أنواع المكالمات {currentPeriod === "weekly" ? "الأسبوعية" : "السنوية"}</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <RechartsBarChart
-              data={callsData}
-              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="category" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="count" name="عدد المكالمات" fill="#3b82f6" />
-            </RechartsBarChart>
-          </ResponsiveContainer>
+        {/* خدمة العملاء */}
+        <div className="space-y-6">
+          <h2 className="text-xl font-semibold">خدمة العملاء {currentPeriod === "weekly" ? "الأسبوعية" : "السنوية"}</h2>
+          
+          {/* فئة المكالمات */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">عملاء مهتمين</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{customerServiceData.calls.customersInterested}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">مهتمين مشاريع</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{customerServiceData.calls.projectsInterested}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">مهتمين مكاتب</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{customerServiceData.calls.officeInterested}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">استفسارات</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{customerServiceData.calls.inquiries}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">طلبات صيانة</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{customerServiceData.calls.maintenanceRequests}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">طلبات تواصل</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{customerServiceData.calls.contactRequests}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">شكاوى</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{customerServiceData.calls.complaints}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">إجمالي المكالمات</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{customerServiceData.calls.total}</div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* فئة الاستفسارات */}
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">مشاريع مباعة</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{customerServiceData.inquiries.soldProjects}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">إيجارات شقق</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{customerServiceData.inquiries.apartmentRentals}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">استفسارات الصكوك</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{customerServiceData.inquiries.deedInquiries}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">طلب أوراق</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{customerServiceData.inquiries.documentRequests}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">استفسارات عامة</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{customerServiceData.inquiries.general}</div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* فئة طلبات الصيانة */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">تم الإلغاء</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{customerServiceData.maintenance.cancelled}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">تم الحل</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{customerServiceData.maintenance.resolved}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">قيد المعالجة</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{customerServiceData.maintenance.inProgress}</div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* رضا العملاء عن الصيانة */}
+        <div className="space-y-6 mt-8">
+          <h2 className="text-xl font-semibold">رضا العملاء عن الصيانة {currentPeriod === "weekly" ? "الأسبوعية" : "السنوية"}</h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">الرضا عن الخدمات</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{maintenanceSatisfaction.serviceQuality}%</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">الرضا عن مدة الإغلاق</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{maintenanceSatisfaction.closureTime}%</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">نسبة الحل من أول مرة</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{maintenanceSatisfaction.firstTimeResolution}%</div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>ملاحظات العملاء</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="whitespace-pre-wrap">{maintenanceSatisfaction.comments}</p>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </Layout>
