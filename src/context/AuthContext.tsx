@@ -1,33 +1,81 @@
 
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 
 interface User {
   id: string;
   username: string;
-  role: 'admin' | 'editor' | 'viewer';
+  role: string;
+  password?: string;
 }
 
 interface AuthContextType {
   user: User | null;
+  users: User[];
   isAuthenticated: boolean;
   login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
+  addUser: (user: Omit<User, "id">) => void;
+  deleteUser: (id: string) => void;
+  resetUserPassword: (id: string, newPassword: string) => void;
 }
+
+const AUTH_STORAGE_KEY = 'auth_user';
+const USERS_STORAGE_KEY = 'auth_users';
+
+// المستخدمين الافتراضيين إذا لم يكن هناك مستخدمين محفوظين
+const DEFAULT_USERS: User[] = [
+  { id: '1', username: 'admin', role: 'مدير النظام', password: 'admin' },
+  { id: '2', username: 'موظف خدمة العملاء', role: 'موظف خدمة العملاء', password: 'staff123' }
+];
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
+
+  // استرجاع المستخدمين والمستخدم الحالي من localStorage عند بدء التطبيق
+  useEffect(() => {
+    // استرجاع المستخدم الحالي
+    const storedUser = localStorage.getItem(AUTH_STORAGE_KEY);
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (error) {
+        console.error('خطأ في استرجاع بيانات المستخدم:', error);
+        localStorage.removeItem(AUTH_STORAGE_KEY);
+      }
+    }
+
+    // استرجاع قائمة المستخدمين
+    const storedUsers = localStorage.getItem(USERS_STORAGE_KEY);
+    if (storedUsers) {
+      try {
+        setUsers(JSON.parse(storedUsers));
+      } catch (error) {
+        console.error('خطأ في استرجاع قائمة المستخدمين:', error);
+        // إذا حدث خطأ، استخدم المستخدمين الافتراضيين
+        setUsers(DEFAULT_USERS);
+        localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(DEFAULT_USERS));
+      }
+    } else {
+      // إذا لم يكن هناك مستخدمين محفوظين، استخدم المستخدمين الافتراضيين
+      setUsers(DEFAULT_USERS);
+      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(DEFAULT_USERS));
+    }
+  }, []);
 
   const login = async (username: string, password: string): Promise<boolean> => {
-    // هنا سيتم إضافة المنطق للتحقق من اسم المستخدم وكلمة المرور من خلال Supabase
-    // حاليا نستخدم تسجيل دخول وهمي لأغراض العرض
-    if (username === 'admin' && password === 'admin') {
-      setUser({
-        id: '1',
-        username: 'admin',
-        role: 'admin'
-      });
+    // البحث عن المستخدم في قائمة المستخدمين المتاحة
+    const foundUser = users.find(u => u.username === username && u.password === password);
+    
+    if (foundUser) {
+      // إنشاء نسخة جديدة من المستخدم بدون كلمة المرور للأمان
+      const userWithoutPassword = { ...foundUser };
+      delete userWithoutPassword.password;
+      
+      setUser(userWithoutPassword);
+      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(userWithoutPassword));
       return true;
     }
     return false;
@@ -35,10 +83,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     setUser(null);
+    localStorage.removeItem(AUTH_STORAGE_KEY);
+  };
+
+  // إضافة مستخدم جديد
+  const addUser = (userData: Omit<User, "id">) => {
+    const newId = (users.length + 1).toString();
+    const newUser: User = {
+      ...userData,
+      id: newId
+    };
+    
+    const updatedUsers = [...users, newUser];
+    setUsers(updatedUsers);
+    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
+  };
+
+  // حذف مستخدم
+  const deleteUser = (id: string) => {
+    const updatedUsers = users.filter(user => user.id !== id);
+    setUsers(updatedUsers);
+    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
+  };
+
+  // إعادة تعيين كلمة مرور المستخدم
+  const resetUserPassword = (id: string, newPassword: string) => {
+    const updatedUsers = users.map(user => 
+      user.id === id ? { ...user, password: newPassword } : user
+    );
+    setUsers(updatedUsers);
+    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, logout }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      users, 
+      isAuthenticated: !!user, 
+      login, 
+      logout,
+      addUser,
+      deleteUser,
+      resetUserPassword
+    }}>
       {children}
     </AuthContext.Provider>
   );

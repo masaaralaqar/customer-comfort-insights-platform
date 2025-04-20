@@ -1,5 +1,6 @@
 
 import { useState } from "react";
+import { useAuth } from "@/context/AuthContext";
 import Layout from "@/components/layout/Layout";
 import { useNotification } from "@/context/NotificationContext";
 import { Button } from "@/components/ui/button";
@@ -23,25 +24,16 @@ import {
 } from "@/components/ui/select";
 import { Edit2, Trash2, UserPlus } from "lucide-react";
 
-interface User {
-  id: string;
-  username: string;
-  role: string;
-  password: string;
-}
-
-// بيانات تجريبية للمستخدمين
-const initialUsers: User[] = [
-  { id: "1", username: "مدير النظام", role: "مدير النظام", password: "admin123" },
-  { id: "2", username: "موظف خدمة العملاء", role: "موظف خدمة العملاء", password: "staff123" }
-];
-
 export default function Settings() {
   const { addNotification } = useNotification();
-  const [users, setUsers] = useState<User[]>(initialUsers);
+  const { users, addUser, deleteUser, resetUserPassword } = useAuth();
   
   // بيانات المستخدم الجديد
-  const [newUser, setNewUser] = useState<Omit<User, "id">>({
+  const [newUser, setNewUser] = useState<{
+    username: string;
+    role: string;
+    password: string;
+  }>({
     username: "",
     role: "",
     password: ""
@@ -66,13 +58,17 @@ export default function Settings() {
       return;
     }
     
-    const newId = (users.length + 1).toString();
-    const user: User = {
-      ...newUser,
-      id: newId
-    };
+    // التحقق من عدم وجود مستخدم باسم المستخدم نفسه
+    if (users.some(user => user.username === newUser.username)) {
+      addNotification({
+        title: "خطأ",
+        message: "اسم المستخدم موجود بالفعل، يرجى اختيار اسم آخر",
+        type: "error"
+      });
+      return;
+    }
     
-    setUsers((prev) => [...prev, user]);
+    addUser(newUser);
     
     addNotification({
       title: "تمت الإضافة",
@@ -93,7 +89,7 @@ export default function Settings() {
     const userToDelete = users.find(user => user.id === id);
     if (!userToDelete) return;
     
-    setUsers((prev) => prev.filter(user => user.id !== id));
+    deleteUser(id);
     
     addNotification({
       title: "تم الحذف",
@@ -110,11 +106,7 @@ export default function Settings() {
     // في هذا المثال، نفترض أن المستخدم يعرف كلمة المرور الجديدة
     const newPassword = "password123";
     
-    setUsers((prev) => 
-      prev.map(user => 
-        user.id === id ? { ...user, password: newPassword } : user
-      )
-    );
+    resetUserPassword(id, newPassword);
     
     addNotification({
       title: "تم التحديث",
