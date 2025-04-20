@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import Layout from "@/components/layout/Layout";
 import { useAuth } from "@/context/AuthContext";
@@ -150,7 +149,7 @@ export default function Complaints() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedComplaint, setSelectedComplaint] = useState<Complaint | null>(null);
-  
+
   const [newComplaint, setNewComplaint] = useState<Omit<Complaint, "id" | "createdBy" | "duration" | "createdAt" | "updatedBy" | "updatedAt">>({
     date: new Date().toISOString().split("T")[0],
     customerName: "",
@@ -168,9 +167,9 @@ export default function Complaints() {
       complaint.project.includes(searchTerm) || 
       complaint.description.includes(searchTerm) ||
       complaint.id.includes(searchTerm);
-    
+
     const matchesStatus = selectedStatus === "all" || complaint.status === selectedStatus;
-    
+
     return matchesSearch && matchesStatus;
   });
 
@@ -209,7 +208,7 @@ export default function Complaints() {
   const handleAddComplaint = () => {
     const newId = (1000 + complaints.length + 1).toString();
     const now = new Date().toISOString();
-    
+
     const complaint: Complaint = {
       ...newComplaint,
       id: newId,
@@ -219,17 +218,17 @@ export default function Complaints() {
       updatedBy: null,
       updatedAt: null
     };
-    
+
     setComplaints((prev) => [complaint, ...prev]);
-    
+
     addNotification({
       title: "تمت الإضافة",
       message: `تم إضافة الشكوى رقم ${newId} بنجاح`,
       type: "success"
     });
-    
+
     setIsAddDialogOpen(false);
-    
+
     setNewComplaint({
       date: new Date().toISOString().split("T")[0],
       customerName: "",
@@ -244,9 +243,9 @@ export default function Complaints() {
 
   const handleUpdateComplaint = () => {
     if (!selectedComplaint) return;
-    
+
     const now = new Date().toISOString();
-    
+
     const updatedComplaints = complaints.map(complaint => {
       if (complaint.id === selectedComplaint.id) {
         return {
@@ -258,10 +257,10 @@ export default function Complaints() {
       }
       return complaint;
     });
-    
+
     setComplaints(updatedComplaints);
     setIsEditDialogOpen(false);
-    
+
     addNotification({
       title: "تم التحديث",
       message: `تم تحديث الشكوى رقم ${selectedComplaint.id} بنجاح`,
@@ -271,14 +270,14 @@ export default function Complaints() {
 
   const handleDeleteComplaint = () => {
     if (!selectedComplaint) return;
-    
+
     const filteredComplaints = complaints.filter(
       complaint => complaint.id !== selectedComplaint.id
     );
-    
+
     setComplaints(filteredComplaints);
     setIsDeleteDialogOpen(false);
-    
+
     addNotification({
       title: "تم الحذف",
       message: `تم حذف الشكوى رقم ${selectedComplaint.id} بنجاح`,
@@ -327,7 +326,7 @@ export default function Complaints() {
                     required
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="customerName">اسم العميل</Label>
                   <Input
@@ -338,26 +337,18 @@ export default function Complaints() {
                     required
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="project">المشروع</Label>
-                  <Select
+                  <Input
+                    id="project"
                     value={newComplaint.project}
-                    onValueChange={(value) => handleNewComplaintChange("project", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="اختر المشروع" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {projects.map((project) => (
-                        <SelectItem key={project.value} value={project.label}>
-                          {project.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    onChange={(e) => handleNewComplaintChange("project", e.target.value)}
+                    placeholder="أدخل اسم المشروع"
+                    required
+                  />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="unitNumber">رقم الوحدة / العمارة</Label>
                   <Input
@@ -368,7 +359,7 @@ export default function Complaints() {
                     required
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="source">مصدر الشكوى</Label>
                   <Select
@@ -387,7 +378,7 @@ export default function Complaints() {
                     </SelectContent>
                   </Select>
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="status">الحالة</Label>
                   <Select
@@ -406,7 +397,7 @@ export default function Complaints() {
                     </SelectContent>
                   </Select>
                 </div>
-                
+
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="description">تفاصيل الشكوى</Label>
                   <Textarea
@@ -418,7 +409,7 @@ export default function Complaints() {
                     className="min-h-[80px]"
                   />
                 </div>
-                
+
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="action">الإجراء المتخذ</Label>
                   <Textarea
@@ -477,7 +468,7 @@ export default function Complaints() {
                 </Select>
               </div>
             </div>
-            
+
             <div className="rounded-md border">
               <Table>
                 <TableHeader>
@@ -557,22 +548,22 @@ export default function Complaints() {
                   <h4 className="font-medium text-sm">اسم العميل</h4>
                   <p className="p-2 bg-muted rounded-md">{selectedComplaint.customerName}</p>
                 </div>
-                
+
                 <div className="space-y-2">
                   <h4 className="font-medium text-sm">المشروع</h4>
                   <p className="p-2 bg-muted rounded-md">{selectedComplaint.project}</p>
                 </div>
-                
+
                 <div className="space-y-2">
                   <h4 className="font-medium text-sm">رقم الوحدة</h4>
                   <p className="p-2 bg-muted rounded-md">{selectedComplaint.unitNumber}</p>
                 </div>
-                
+
                 <div className="space-y-2">
                   <h4 className="font-medium text-sm">مصدر الشكوى</h4>
                   <p className="p-2 bg-muted rounded-md">{selectedComplaint.source}</p>
                 </div>
-                
+
                 <div className="space-y-2">
                   <h4 className="font-medium text-sm">الحالة</h4>
                   <div className={`p-2 rounded-md ${
@@ -587,22 +578,22 @@ export default function Complaints() {
                     {selectedComplaint.status}
                   </div>
                 </div>
-                
+
                 <div className="space-y-2">
                   <h4 className="font-medium text-sm">المدة</h4>
                   <p className="p-2 bg-muted rounded-md">{selectedComplaint.duration} يوم</p>
                 </div>
-                
+
                 <div className="space-y-2 md:col-span-2">
                   <h4 className="font-medium text-sm">تفاصيل الشكوى</h4>
                   <p className="p-2 bg-muted rounded-md min-h-[80px]">{selectedComplaint.description}</p>
                 </div>
-                
+
                 <div className="space-y-2 md:col-span-2">
                   <h4 className="font-medium text-sm">الإجراء المتخذ</h4>
                   <p className="p-2 bg-muted rounded-md min-h-[80px]">{selectedComplaint.action}</p>
                 </div>
-                
+
                 <div className="space-y-2 md:col-span-2">
                   <h4 className="font-medium text-sm">معلومات الإنشاء والتحديث</h4>
                   <div className="p-3 bg-muted rounded-md space-y-2">
@@ -640,7 +631,7 @@ export default function Complaints() {
                 required
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="edit-customerName">اسم العميل</Label>
               <Input
@@ -651,7 +642,7 @@ export default function Complaints() {
                 required
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="edit-project">المشروع</Label>
               <Select
@@ -670,7 +661,7 @@ export default function Complaints() {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="edit-unitNumber">رقم الوحدة / العمارة</Label>
               <Input
@@ -681,7 +672,7 @@ export default function Complaints() {
                 required
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="edit-source">مصدر الشكوى</Label>
               <Select
@@ -700,7 +691,7 @@ export default function Complaints() {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="edit-status">الحالة</Label>
               <Select
@@ -719,7 +710,7 @@ export default function Complaints() {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div className="space-y-2 md:col-span-2">
               <Label htmlFor="edit-description">تفاصيل الشكوى</Label>
               <Textarea
@@ -731,7 +722,7 @@ export default function Complaints() {
                 className="min-h-[80px]"
               />
             </div>
-            
+
             <div className="space-y-2 md:col-span-2">
               <Label htmlFor="edit-action">الإجراء المتخذ</Label>
               <Textarea
