@@ -1,7 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from "react";
 
-const prisma = undefined; // Removed PrismaClient initialization
-
 // تعريف أنواع البيانات
 export interface MetricData {
   title: string;
@@ -59,10 +57,28 @@ export interface CustomerServiceData {
 }
 
 export interface MaintenanceSatisfactionData {
-  serviceQuality: number;
-  closureTime: number;
-  firstTimeResolution: number;
-  comments: string;
+  serviceQuality: {
+    veryHappy: number;
+    happy: number;
+    neutral: number;
+    unhappy: number;
+    veryUnhappy: number;
+  };
+  closureTime: {
+    veryHappy: number;
+    happy: number;
+    neutral: number;
+    unhappy: number;
+    veryUnhappy: number;
+  };
+  firstTimeResolution: {
+    veryHappy: number;
+    happy: number;
+    neutral: number;
+    unhappy: number;
+    veryUnhappy: number;
+  };
+  comments: string[];
 }
 
 export interface PeriodData {
@@ -458,7 +474,6 @@ const MetricsContext = createContext<MetricsContextType | undefined>(undefined);
 
 export function MetricsProvider({ children }: { children: ReactNode }) {
   const [currentPeriod, setCurrentPeriod] = useState<"weekly" | "yearly">("weekly");
-
   const [periodData, setPeriodData] = useState<PeriodData>({
     weekly: {
       metrics: defaultMetrics,
@@ -474,36 +489,76 @@ export function MetricsProvider({ children }: { children: ReactNode }) {
     }
   });
 
-  const [customerServiceData, setCustomerServiceData] = useState<CustomerServiceData>({
-    calls: {
-      complaints: 0,
-      contactRequests: 0,
-      maintenanceRequests: 0,
-      inquiries: 0,
-      officeInterested: 0,
-      projectsInterested: 0,
-      customersInterested: 0,
-      total: 0
+  const [customerServiceData, setCustomerServiceData] = useState<{
+    weekly: CustomerServiceData;
+    yearly: CustomerServiceData;
+  }>({
+    weekly: {
+      calls: {
+        complaints: 0,
+        contactRequests: 0,
+        maintenanceRequests: 0,
+        inquiries: 0,
+        officeInterested: 0,
+        projectsInterested: 0,
+        customersInterested: 0,
+        total: 0
+      },
+      inquiries: {
+        general: 0,
+        documentRequests: 0,
+        deedInquiries: 0,
+        apartmentRentals: 0,
+        soldProjects: 0
+      },
+      maintenance: {
+        cancelled: 0,
+        resolved: 0,
+        inProgress: 0
+      }
     },
-    inquiries: {
-      general: 0,
-      documentRequests: 0,
-      deedInquiries: 0,
-      apartmentRentals: 0,
-      soldProjects: 0
-    },
-    maintenance: {
-      cancelled: 0,
-      resolved: 0,
-      inProgress: 0
+    yearly: {
+      calls: {
+        complaints: 0,
+        contactRequests: 0,
+        maintenanceRequests: 0,
+        inquiries: 0,
+        officeInterested: 0,
+        projectsInterested: 0,
+        customersInterested: 0,
+        total: 0
+      },
+      inquiries: {
+        general: 0,
+        documentRequests: 0,
+        deedInquiries: 0,
+        apartmentRentals: 0,
+        soldProjects: 0
+      },
+      maintenance: {
+        cancelled: 0,
+        resolved: 0,
+        inProgress: 0
+      }
     }
   });
 
-  const [maintenanceSatisfaction, setMaintenanceSatisfaction] = useState<MaintenanceSatisfactionData>({
-    serviceQuality: 0,
-    closureTime: 0,
-    firstTimeResolution: 0,
-    comments: ""
+  const [maintenanceSatisfaction, setMaintenanceSatisfaction] = useState<{
+    weekly: MaintenanceSatisfactionData;
+    yearly: MaintenanceSatisfactionData;
+  }>({
+    weekly: {
+      serviceQuality: { veryHappy: 0, happy: 0, neutral: 0, unhappy: 0, veryUnhappy: 0 },
+      closureTime: { veryHappy: 0, happy: 0, neutral: 0, unhappy: 0, veryUnhappy: 0 },
+      firstTimeResolution: { veryHappy: 0, happy: 0, neutral: 0, unhappy: 0, veryUnhappy: 0 },
+      comments: []
+    },
+    yearly: {
+      serviceQuality: { veryHappy: 0, happy: 0, neutral: 0, unhappy: 0, veryUnhappy: 0 },
+      closureTime: { veryHappy: 0, happy: 0, neutral: 0, unhappy: 0, veryUnhappy: 0 },
+      firstTimeResolution: { veryHappy: 0, happy: 0, neutral: 0, unhappy: 0, veryUnhappy: 0 },
+      comments: []
+    }
   });
 
   const metrics = periodData[currentPeriod].metrics;
@@ -601,12 +656,44 @@ export function MetricsProvider({ children }: { children: ReactNode }) {
 
   const updateCustomerServiceData = async (data: CustomerServiceData) => {
     try {
-      // Update local state
-      setCustomerServiceData(prevData => ({
-        ...prevData,
-        calls: { ...data.calls },
-        inquiries: { ...data.inquiries },
-        maintenance: { ...data.maintenance }
+      // Calculate total calls
+      const total = Object.values(data.calls).reduce((sum, val) => 
+        typeof val === 'number' && val !== data.calls.total ? sum + val : sum, 0
+      );
+
+      const updatedData = {
+        ...data,
+        calls: {
+          ...data.calls,
+          total: total
+        }
+      };
+
+      // Update local state for current period
+      setCustomerServiceData(prev => ({
+        ...prev,
+        [currentPeriod]: updatedData,
+        yearly: currentPeriod === "weekly" ? {
+          ...prev.yearly,
+          calls: Object.fromEntries(
+            Object.entries(prev.yearly.calls).map(([key, value]) => [
+              key,
+              key === "total" ? value + total : value + (updatedData.calls[key as keyof typeof updatedData.calls] || 0)
+            ])
+          ),
+          inquiries: Object.fromEntries(
+            Object.entries(prev.yearly.inquiries).map(([key, value]) => [
+              key,
+              value + (updatedData.inquiries[key as keyof typeof updatedData.inquiries] || 0)
+            ])
+          ),
+          maintenance: Object.fromEntries(
+            Object.entries(prev.yearly.maintenance).map(([key, value]) => [
+              key,
+              value + (updatedData.maintenance[key as keyof typeof updatedData.maintenance] || 0)
+            ])
+          )
+        } : prev.yearly
       }));
 
       // Send data to API
@@ -617,7 +704,7 @@ export function MetricsProvider({ children }: { children: ReactNode }) {
         },
         body: JSON.stringify({
           period: currentPeriod,
-          ...data
+          ...updatedData
         }),
       });
 
@@ -632,60 +719,78 @@ export function MetricsProvider({ children }: { children: ReactNode }) {
       throw new Error('فشل في حفظ البيانات');
     }
   };
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          period: currentPeriod,
-          ...data
-        }),
-      });
 
-      if (!response.ok) {
-        throw new Error('فشل في حفظ البيانات');
-      }
-    } catch (error) {
-      console.error("خطأ في حفظ بيانات خدمة العملاء:", error);
-      throw error;
-    }
+  const calculateSatisfactionPercentage = (data: Record<string, number>) => {
+    const total = Object.values(data).reduce((sum, val) => sum + val, 0);
+    const weightedSum = (
+      data.veryHappy * 100 +
+      data.happy * 75 +
+      data.neutral * 50 +
+      data.unhappy * 25 +
+      data.veryUnhappy * 0
+    );
+    return total > 0 ? weightedSum / total : 0;
   };
 
   const updateMaintenanceSatisfactionData = (data: MaintenanceSatisfactionData) => {
-    setMaintenanceSatisfaction(prevData => ({
-      ...prevData,
-      ...data
+    setMaintenanceSatisfaction(prev => ({
+      ...prev,
+      [currentPeriod]: data,
+      yearly: currentPeriod === "weekly" ? {
+        ...prev.yearly,
+        serviceQuality: Object.fromEntries(
+          Object.entries(data.serviceQuality).map(([key, value]) => [
+            key,
+            (prev.yearly.serviceQuality[key as keyof typeof prev.yearly.serviceQuality] || 0) + value
+          ])
+        ),
+        closureTime: Object.fromEntries(
+          Object.entries(data.closureTime).map(([key, value]) => [
+            key,
+            (prev.yearly.closureTime[key as keyof typeof prev.yearly.closureTime] || 0) + value
+          ])
+        ),
+        firstTimeResolution: Object.fromEntries(
+          Object.entries(data.firstTimeResolution).map(([key, value]) => [
+            key,
+            (prev.yearly.firstTimeResolution[key as keyof typeof prev.yearly.firstTimeResolution] || 0) + value
+          ])
+        ),
+        comments: [...prev.yearly.comments, ...data.comments]
+      } : prev.yearly
     }));
 
+    // Update related metrics
     setPeriodData(prev => ({
       ...prev,
       [currentPeriod]: {
         ...prev[currentPeriod],
         metrics: prev[currentPeriod].metrics.map(metric => {
-          if (metric.title === "الرضا عن خدمات الصيانة") {
-            return {
-              ...metric,
-              value: `${data.serviceQuality}%`,
-              change: ((data.serviceQuality - parseFloat(metric.target)) / parseFloat(metric.target)) * 100,
-              isPositive: data.serviceQuality >= parseFloat(metric.target)
-            };
+          switch (metric.title) {
+            case "الرضا عن خدمات الصيانة":
+              return {
+                ...metric,
+                value: `${calculateSatisfactionPercentage(data.serviceQuality).toFixed(1)}%`,
+                change: calculateSatisfactionPercentage(data.serviceQuality) - parseFloat(metric.target),
+                isPositive: calculateSatisfactionPercentage(data.serviceQuality) >= parseFloat(metric.target)
+              };
+            case "الرضا عن مدة إغلاق الطلبات":
+              return {
+                ...metric,
+                value: `${calculateSatisfactionPercentage(data.closureTime).toFixed(1)}%`,
+                change: calculateSatisfactionPercentage(data.closureTime) - parseFloat(metric.target),
+                isPositive: calculateSatisfactionPercentage(data.closureTime) >= parseFloat(metric.target)
+              };
+            case "نسبة الإغلاق من أول مرة":
+              return {
+                ...metric,
+                value: `${calculateSatisfactionPercentage(data.firstTimeResolution).toFixed(1)}%`,
+                change: calculateSatisfactionPercentage(data.firstTimeResolution) - parseFloat(metric.target),
+                isPositive: calculateSatisfactionPercentage(data.firstTimeResolution) >= parseFloat(metric.target)
+              };
+            default:
+              return metric;
           }
-          if (metric.title === "الرضا عن مدة إغلاق الطلبات") {
-            return {
-              ...metric,
-              value: `${data.closureTime}%`,
-              change: ((data.closureTime - parseFloat(metric.target)) / parseFloat(metric.target)) * 100,
-              isPositive: data.closureTime >= parseFloat(metric.target)
-            };
-          }
-          if (metric.title === "نسبة الإغلاق من أول مرة") {
-            return {
-              ...metric,
-              value: `${data.firstTimeResolution}%`,
-              change: ((data.firstTimeResolution - parseFloat(metric.target)) / parseFloat(metric.target)) * 100,
-              isPositive: data.firstTimeResolution >= parseFloat(metric.target)
-            };
-          }
-          return metric;
         })
       }
     }));
@@ -696,13 +801,13 @@ export function MetricsProvider({ children }: { children: ReactNode }) {
       value={{ 
         currentPeriod,
         setCurrentPeriod,
-        metrics, 
-        qualityData, 
-        npsData, 
-        callsData, 
-        updateMetric, 
-        updateQualityData, 
-        updateNPSData, 
+        metrics: periodData[currentPeriod].metrics,
+        qualityData: periodData[currentPeriod].qualityData,
+        npsData: periodData[currentPeriod].npsData,
+        callsData: periodData[currentPeriod].callsData,
+        updateMetric,
+        updateQualityData,
+        updateNPSData,
         updateCallsData,
         addMetric,
         addQualityData,
@@ -710,8 +815,8 @@ export function MetricsProvider({ children }: { children: ReactNode }) {
         addCallsData,
         updateCustomerServiceData,
         updateMaintenanceSatisfactionData,
-        customerServiceData,
-        maintenanceSatisfaction
+        customerServiceData: customerServiceData[currentPeriod],
+        maintenanceSatisfaction: maintenanceSatisfaction[currentPeriod]
       }}
     >
       {children}
