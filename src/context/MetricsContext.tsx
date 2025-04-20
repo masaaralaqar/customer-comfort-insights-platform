@@ -31,6 +31,38 @@ export interface CallsData {
   count: number;
 }
 
+export interface CustomerServiceData {
+  calls: {
+    complaints: number;
+    contactRequests: number;
+    maintenanceRequests: number;
+    inquiries: number;
+    officeInterested: number;
+    projectsInterested: number;
+    customersInterested: number;
+    total: number;
+  };
+  inquiries: {
+    general: number;
+    documentRequests: number;
+    deedInquiries: number;
+    apartmentRentals: number;
+    soldProjects: number;
+  };
+  maintenance: {
+    cancelled: number;
+    resolved: number;
+    inProgress: number;
+  };
+}
+
+export interface MaintenanceSatisfactionData {
+  serviceQuality: number;
+  closureTime: number;
+  firstTimeResolution: number;
+  comments: string;
+}
+
 // تعريف نوع للبيانات مع فصل الأسبوعي والسنوي
 export interface PeriodData {
   weekly: {
@@ -441,6 +473,38 @@ export function MetricsProvider({ children }: { children: ReactNode }) {
     }
   });
 
+  const [customerServiceData, setCustomerServiceData] = useState<CustomerServiceData>({
+    calls: {
+      complaints: 0,
+      contactRequests: 0,
+      maintenanceRequests: 0,
+      inquiries: 0,
+      officeInterested: 0,
+      projectsInterested: 0,
+      customersInterested: 0,
+      total: 0
+    },
+    inquiries: {
+      general: 0,
+      documentRequests: 0,
+      deedInquiries: 0,
+      apartmentRentals: 0,
+      soldProjects: 0
+    },
+    maintenance: {
+      cancelled: 0,
+      resolved: 0,
+      inProgress: 0
+    }
+  });
+
+  const [maintenanceSatisfaction, setMaintenanceSatisfaction] = useState<MaintenanceSatisfactionData>({
+    serviceQuality: 0,
+    closureTime: 0,
+    firstTimeResolution: 0,
+    comments: ""
+  });
+
   // الحصول على البيانات الحالية (أسبوعي أو سنوي)
   const metrics = periodData[currentPeriod].metrics;
   const qualityData = periodData[currentPeriod].qualityData;
@@ -535,6 +599,14 @@ export function MetricsProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const updateCustomerServiceData = (data: CustomerServiceData) => {
+    setCustomerServiceData(data);
+  };
+
+  const updateMaintenanceSatisfactionData = (data: MaintenanceSatisfactionData) => {
+    setMaintenanceSatisfaction(data);
+  };
+
   return (
     <MetricsContext.Provider 
       value={{ 
@@ -551,7 +623,11 @@ export function MetricsProvider({ children }: { children: ReactNode }) {
         addMetric,
         addQualityData,
         addNPSData,
-        addCallsData
+        addCallsData,
+        updateCustomerServiceData,
+        updateMaintenanceSatisfactionData,
+        customerServiceData,
+        maintenanceSatisfaction
       }}
     >
       {children}
