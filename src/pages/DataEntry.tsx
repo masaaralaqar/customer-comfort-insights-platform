@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,15 +10,34 @@ import { useMetrics } from "@/context/MetricsContext";
 import { useNotification } from "@/context/NotificationContext";
 
 export default function DataEntry() {
-  const { metrics, qualityData, npsData, callsData, updateMetric, updateQualityData, updateNPSData, updateCallsData } = useMetrics();
+  const { 
+    metrics, 
+    qualityData, 
+    npsData, 
+    callsData, 
+    updateMetric, 
+    updateQualityData, 
+    updateNPSData, 
+    updateCallsData,
+    currentPeriod,
+    setCurrentPeriod 
+  } = useMetrics();
+  
   const { addNotification } = useNotification();
-  const [period, setPeriod] = useState<"weekly" | "yearly">("weekly");
   
   // نسخة عمل للتعديلات
   const [workingMetrics, setWorkingMetrics] = useState(metrics.map(metric => ({ ...metric })));
   const [workingQualityData, setWorkingQualityData] = useState(qualityData.map(item => ({ ...item })));
   const [workingNPSData, setWorkingNPSData] = useState(npsData.map(item => ({ ...item })));
   const [workingCallsData, setWorkingCallsData] = useState(callsData.map(item => ({ ...item })));
+
+  // تحديث نسخة العمل عند تغيير الفترة
+  useEffect(() => {
+    setWorkingMetrics(metrics.map(metric => ({ ...metric })));
+    setWorkingQualityData(qualityData.map(item => ({ ...item })));
+    setWorkingNPSData(npsData.map(item => ({ ...item })));
+    setWorkingCallsData(callsData.map(item => ({ ...item })));
+  }, [metrics, qualityData, npsData, callsData, currentPeriod]);
 
   const handleMetricChange = (index: number, field: string, value: string | number) => {
     setWorkingMetrics(prev => {
@@ -78,7 +97,7 @@ export default function DataEntry() {
   };
 
   const saveChanges = () => {
-    // حفظ كل التغييرات
+    // حفظ كل التغييرات للفترة الحالية فقط
     workingMetrics.forEach((metric, index) => {
       updateMetric(index, metric);
     });
@@ -97,7 +116,7 @@ export default function DataEntry() {
     
     addNotification({
       title: "تم الحفظ",
-      message: "تم حفظ جميع البيانات بنجاح",
+      message: `تم حفظ بيانات الفترة ${currentPeriod === "weekly" ? "الأسبوعية" : "السنوية"} بنجاح`,
       type: "success"
     });
   };
@@ -109,14 +128,14 @@ export default function DataEntry() {
           <h1 className="text-2xl font-bold">إدخال البيانات والمؤشرات</h1>
           <div className="flex gap-2">
             <Button
-              variant={period === "weekly" ? "default" : "outline"}
-              onClick={() => setPeriod("weekly")}
+              variant={currentPeriod === "weekly" ? "default" : "outline"}
+              onClick={() => setCurrentPeriod("weekly")}
             >
               أسبوعي
             </Button>
             <Button
-              variant={period === "yearly" ? "default" : "outline"}
-              onClick={() => setPeriod("yearly")}
+              variant={currentPeriod === "yearly" ? "default" : "outline"}
+              onClick={() => setCurrentPeriod("yearly")}
             >
               سنوي
             </Button>
@@ -134,7 +153,7 @@ export default function DataEntry() {
           <TabsContent value="metrics">
             <Card>
               <CardHeader>
-                <CardTitle>تحديث مؤشرات الأداء {period === "weekly" ? "الأسبوعية" : "السنوية"}</CardTitle>
+                <CardTitle>تحديث مؤشرات الأداء {currentPeriod === "weekly" ? "الأسبوعية" : "السنوية"}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -169,13 +188,20 @@ export default function DataEntry() {
           <TabsContent value="quality">
             <Card>
               <CardHeader>
-                <CardTitle>تحديث بيانات الجودة {period === "weekly" ? "الأسبوعية" : "السنوية"}</CardTitle>
+                <CardTitle>تحديث بيانات الجودة {currentPeriod === "weekly" ? "الأسبوعية" : "السنوية"}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-6">
                   {workingQualityData.map((data, index) => (
                     <div key={index} className="border rounded-lg p-4">
                       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div>
+                          <Label>{currentPeriod === "weekly" ? "الأسبوع" : "الفترة"}</Label>
+                          <Input
+                            value={data.week}
+                            onChange={(e) => handleQualityDataChange(index, 'week', e.target.value)}
+                          />
+                        </div>
                         <div>
                           <Label>جودة إدارة المرافق (%)</Label>
                           <Input
@@ -217,13 +243,20 @@ export default function DataEntry() {
           <TabsContent value="nps">
             <Card>
               <CardHeader>
-                <CardTitle>تحديث بيانات الترشيح {period === "weekly" ? "الأسبوعية" : "السنوية"}</CardTitle>
+                <CardTitle>تحديث بيانات الترشيح {currentPeriod === "weekly" ? "الأسبوعية" : "السنوية"}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-6">
                   {workingNPSData.map((data, index) => (
                     <div key={index} className="border rounded-lg p-4">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div>
+                          <Label>{currentPeriod === "weekly" ? "الأسبوع" : "الفترة"}</Label>
+                          <Input
+                            value={data.week}
+                            onChange={(e) => handleNPSDataChange(index, 'week', e.target.value)}
+                          />
+                        </div>
                         <div>
                           <Label>نسبة الترشيح للعملاء الجدد (%)</Label>
                           <Input
@@ -265,7 +298,7 @@ export default function DataEntry() {
           <TabsContent value="calls">
             <Card>
               <CardHeader>
-                <CardTitle>تحديث بيانات المكالمات</CardTitle>
+                <CardTitle>تحديث بيانات المكالمات {currentPeriod === "weekly" ? "الأسبوعية" : "السنوية"}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-6">
@@ -299,7 +332,7 @@ export default function DataEntry() {
 
         <div className="flex justify-end">
           <Button onClick={saveChanges} size="lg">
-            حفظ جميع التغييرات
+            حفظ تغييرات البيانات {currentPeriod === "weekly" ? "الأسبوعية" : "السنوية"}
           </Button>
         </div>
       </div>

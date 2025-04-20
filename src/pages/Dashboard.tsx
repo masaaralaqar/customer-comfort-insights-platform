@@ -1,5 +1,4 @@
-
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { MetricCard } from "@/components/dashboard/MetricCard";
 import { Button } from "@/components/ui/button";
@@ -33,8 +32,7 @@ import {
 import { useMetrics, MetricData } from "@/context/MetricsContext";
 
 export default function Dashboard() {
-  const { metrics, qualityData, npsData, callsData } = useMetrics();
-  const [period, setPeriod] = useState<"weekly" | "yearly">("weekly");
+  const { metrics, qualityData, npsData, callsData, currentPeriod, setCurrentPeriod } = useMetrics();
 
   // إضافة أيقونات للمؤشرات
   const getIconForMetric = (index: number) => {
@@ -71,21 +69,21 @@ export default function Dashboard() {
           <h1 className="text-2xl font-bold">لوحة التحكم الرئيسية</h1>
           <div className="flex gap-2">
             <Button
-              variant={period === "weekly" ? "default" : "outline"}
-              onClick={() => setPeriod("weekly")}
+              variant={currentPeriod === "weekly" ? "default" : "outline"}
+              onClick={() => setCurrentPeriod("weekly")}
             >
               أسبوعي
             </Button>
             <Button
-              variant={period === "yearly" ? "default" : "outline"}
-              onClick={() => setPeriod("yearly")}
+              variant={currentPeriod === "yearly" ? "default" : "outline"}
+              onClick={() => setCurrentPeriod("yearly")}
             >
               سنوي
             </Button>
           </div>
         </div>
 
-        <h2 className="text-xl font-semibold mb-2">مؤشرات الأداء الرئيسية {period === "weekly" ? "الأسبوعية" : "السنوية"}</h2>
+        <h2 className="text-xl font-semibold mb-2">مؤشرات الأداء الرئيسية {currentPeriod === "weekly" ? "الأسبوعية" : "السنوية"}</h2>
         
         <div className="dashboard-grid">
           {metricsWithIcons.map((metric, index) => (
@@ -105,7 +103,7 @@ export default function Dashboard() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
           <div className="chart-container">
-            <h3 className="text-lg font-semibold mb-4">مؤشرات الجودة</h3>
+            <h3 className="text-lg font-semibold mb-4">مؤشرات الجودة {currentPeriod === "weekly" ? "الأسبوعية" : "السنوية"}</h3>
             <ResponsiveContainer width="100%" height={300}>
               <RechartsLineChart
                 data={qualityData}
@@ -142,7 +140,7 @@ export default function Dashboard() {
           </div>
 
           <div className="chart-container">
-            <h3 className="text-lg font-semibold mb-4">مؤشرات الترشيح</h3>
+            <h3 className="text-lg font-semibold mb-4">مؤشرات الترشيح {currentPeriod === "weekly" ? "الأسبوعية" : "السنوية"}</h3>
             <ResponsiveContainer width="100%" height={300}>
               <RechartsLineChart
                 data={npsData}
@@ -180,7 +178,7 @@ export default function Dashboard() {
         </div>
 
         <div className="chart-container mt-6">
-          <h3 className="text-lg font-semibold mb-4">خدمة العملاء - أنواع المكالمات</h3>
+          <h3 className="text-lg font-semibold mb-4">خدمة العملاء - أنواع المكالمات {currentPeriod === "weekly" ? "الأسبوعية" : "السنوية"}</h3>
           <ResponsiveContainer width="100%" height={300}>
             <RechartsBarChart
               data={callsData}

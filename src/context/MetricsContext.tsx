@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, ReactNode } from "react";
 
 // تعريف أنواع البيانات
@@ -32,7 +31,25 @@ export interface CallsData {
   count: number;
 }
 
+// تعريف نوع للبيانات مع فصل الأسبوعي والسنوي
+export interface PeriodData {
+  weekly: {
+    metrics: MetricData[];
+    qualityData: QualityData[];
+    npsData: NPSData[];
+    callsData: CallsData[];
+  };
+  yearly: {
+    metrics: MetricData[];
+    qualityData: QualityData[];
+    npsData: NPSData[];
+    callsData: CallsData[];
+  };
+}
+
 interface MetricsContextType {
+  currentPeriod: "weekly" | "yearly";
+  setCurrentPeriod: (period: "weekly" | "yearly") => void;
   metrics: MetricData[];
   qualityData: QualityData[];
   npsData: NPSData[];
@@ -55,11 +72,25 @@ const defaultQualityData = [
   { week: "الأسبوع 4", facilityManagement: 96, maintenance: 97, delivery: 98 },
 ];
 
+const defaultYearlyQualityData = [
+  { week: "الربع الأول", facilityManagement: 90, maintenance: 92, delivery: 96 },
+  { week: "الربع الثاني", facilityManagement: 93, maintenance: 95, delivery: 97 },
+  { week: "الربع الثالث", facilityManagement: 94, maintenance: 96, delivery: 98 },
+  { week: "الربع الرابع", facilityManagement: 97, maintenance: 98, delivery: 99 },
+];
+
 const defaultNpsData = [
   { week: "الأسبوع 1", newCustomers: 60, afterFirstYear: 61, longTerm: 30 },
   { week: "الأسبوع 2", newCustomers: 63, afterFirstYear: 64, longTerm: 32 },
   { week: "الأسبوع 3", newCustomers: 65, afterFirstYear: 66, longTerm: 36 },
   { week: "الأسبوع 4", newCustomers: 67, afterFirstYear: 68, longTerm: 37 },
+];
+
+const defaultYearlyNpsData = [
+  { week: "الربع الأول", newCustomers: 61, afterFirstYear: 63, longTerm: 31 },
+  { week: "الربع الثاني", newCustomers: 64, afterFirstYear: 65, longTerm: 34 },
+  { week: "الربع الثالث", newCustomers: 66, afterFirstYear: 67, longTerm: 37 },
+  { week: "الربع الرابع", newCustomers: 68, afterFirstYear: 69, longTerm: 39 },
 ];
 
 const defaultCallsData = [
@@ -69,6 +100,15 @@ const defaultCallsData = [
   { category: "استفسارات", count: 58 },
   { category: "مهتمين مكاتب", count: 34 },
   { category: "شكاوى", count: 28 },
+];
+
+const defaultYearlyCallsData = [
+  { category: "مهتمين", count: 520 },
+  { category: "مهتمين مشاريع", count: 480 },
+  { category: "طلبات صيانة", count: 790 },
+  { category: "استفسارات", count: 680 },
+  { category: "مهتمين مكاتب", count: 410 },
+  { category: "شكاوى", count: 340 },
 ];
 
 // بيانات المؤشرات الافتراضية
@@ -225,75 +265,281 @@ const defaultMetrics = [
   },
 ];
 
+const defaultYearlyMetrics = [
+  {
+    title: "نسبة الترشيح للعملاء الجدد",
+    value: "68%",
+    target: "65%",
+    icon: null, 
+    change: 4.6,
+    isPositive: true,
+    reachedTarget: true,
+    isLowerBetter: false,
+  },
+  {
+    title: "نسبة الترشيح بعد السنة",
+    value: "70%",
+    target: "65%",
+    icon: null,
+    change: 7.7,
+    isPositive: true,
+    reachedTarget: true,
+    isLowerBetter: false,
+  },
+  {
+    title: "نسبة الترشيح للعملاء القدامى",
+    value: "35%",
+    target: "30%",
+    icon: null,
+    change: 16.7,
+    isPositive: true,
+    reachedTarget: true,
+    isLowerBetter: false,
+  },
+  {
+    title: "جودة التسليم",
+    value: "99%",
+    target: "100%",
+    icon: null,
+    change: 2.5,
+    isPositive: true,
+    reachedTarget: false,
+    isLowerBetter: false,
+  },
+  {
+    title: "جودة الصيانة",
+    value: "98%",
+    target: "100%",
+    icon: null,
+    change: 3.8,
+    isPositive: true,
+    reachedTarget: false,
+    isLowerBetter: false,
+  },
+  {
+    title: "عدد الثواني للرد",
+    value: "2.5 ثانية",
+    target: "3 ثواني",
+    icon: null,
+    change: 16.7,
+    isPositive: false,
+    reachedTarget: true,
+    isLowerBetter: true,
+  },
+  {
+    title: "معدل الرد على المكالمات",
+    value: "16%",
+    target: "20%",
+    icon: null,
+    change: 20.0,
+    isPositive: false,
+    reachedTarget: false,
+    isLowerBetter: true,
+  },
+  {
+    title: "راحة العميل (CSAT)",
+    value: "78%",
+    target: "70%",
+    icon: null,
+    change: 11.4,
+    isPositive: true,
+    reachedTarget: true,
+    isLowerBetter: false,
+  },
+  {
+    title: "سرعة إغلاق طلبات الصيانة",
+    value: "2.2 يوم",
+    target: "3 أيام",
+    icon: null,
+    change: 26.7,
+    isPositive: false,
+    reachedTarget: true,
+    isLowerBetter: true,
+  },
+  {
+    title: "عدد إعادة فتح طلب",
+    value: "2",
+    target: "0",
+    icon: null,
+    change: 200,
+    isPositive: false,
+    reachedTarget: false,
+    isLowerBetter: true,
+  },
+  {
+    title: "جودة إدارة المرافق",
+    value: "85%",
+    target: "80%",
+    icon: null,
+    change: 6.25,
+    isPositive: true,
+    reachedTarget: true,
+    isLowerBetter: false,
+  },
+  {
+    title: "معدل التحول",
+    value: "2.5%",
+    target: "2%",
+    icon: null,
+    change: 25.0,
+    isPositive: true,
+    reachedTarget: true,
+    isLowerBetter: false,
+  },
+  {
+    title: "نسبة الرضا عن التسليم",
+    value: "85%",
+    target: "80%",
+    icon: null,
+    change: 6.25,
+    isPositive: true,
+    reachedTarget: true,
+    isLowerBetter: false,
+  },
+  {
+    title: "عدد العملاء المرشحين",
+    value: "672",
+    target: "584",
+    icon: null,
+    change: 15.1,
+    isPositive: true,
+    reachedTarget: true,
+    isLowerBetter: false,
+  },
+  {
+    title: "المساهمة في المبيعات",
+    value: "7%",
+    target: "5%",
+    icon: null,
+    change: 40.0,
+    isPositive: true,
+    reachedTarget: true,
+    isLowerBetter: false,
+  },
+];
+
 // إنشاء السياق
 const MetricsContext = createContext<MetricsContextType | undefined>(undefined);
 
 // مزود السياق
 export function MetricsProvider({ children }: { children: ReactNode }) {
-  const [metrics, setMetrics] = useState<MetricData[]>(defaultMetrics);
-  const [qualityData, setQualityData] = useState<QualityData[]>(defaultQualityData);
-  const [npsData, setNpsData] = useState<NPSData[]>(defaultNpsData);
-  const [callsData, setCallsData] = useState<CallsData[]>(defaultCallsData);
+  const [currentPeriod, setCurrentPeriod] = useState<"weekly" | "yearly">("weekly");
+  
+  // تخزين البيانات مع فصل بين الأسبوعي والسنوي
+  const [periodData, setPeriodData] = useState<PeriodData>({
+    weekly: {
+      metrics: defaultMetrics,
+      qualityData: defaultQualityData,
+      npsData: defaultNpsData,
+      callsData: defaultCallsData
+    },
+    yearly: {
+      metrics: defaultYearlyMetrics,
+      qualityData: defaultYearlyQualityData,
+      npsData: defaultYearlyNpsData,
+      callsData: defaultYearlyCallsData
+    }
+  });
+
+  // الحصول على البيانات الحالية (أسبوعي أو سنوي)
+  const metrics = periodData[currentPeriod].metrics;
+  const qualityData = periodData[currentPeriod].qualityData;
+  const npsData = periodData[currentPeriod].npsData;
+  const callsData = periodData[currentPeriod].callsData;
 
   // تحديث مؤشر موجود
   const updateMetric = (index: number, data: Partial<MetricData>) => {
-    setMetrics(prev => {
-      const newMetrics = [...prev];
-      newMetrics[index] = { ...newMetrics[index], ...data };
-      return newMetrics;
+    setPeriodData(prev => {
+      const newData = { ...prev };
+      newData[currentPeriod].metrics = [...prev[currentPeriod].metrics];
+      newData[currentPeriod].metrics[index] = { 
+        ...newData[currentPeriod].metrics[index], 
+        ...data 
+      };
+      return newData;
     });
   };
 
   // تحديث بيانات الجودة
   const updateQualityData = (index: number, data: Partial<QualityData>) => {
-    setQualityData(prev => {
-      const newData = [...prev];
-      newData[index] = { ...newData[index], ...data };
+    setPeriodData(prev => {
+      const newData = { ...prev };
+      newData[currentPeriod].qualityData = [...prev[currentPeriod].qualityData];
+      newData[currentPeriod].qualityData[index] = { 
+        ...newData[currentPeriod].qualityData[index], 
+        ...data 
+      };
       return newData;
     });
   };
 
   // تحديث بيانات الترشيح
   const updateNPSData = (index: number, data: Partial<NPSData>) => {
-    setNpsData(prev => {
-      const newData = [...prev];
-      newData[index] = { ...newData[index], ...data };
+    setPeriodData(prev => {
+      const newData = { ...prev };
+      newData[currentPeriod].npsData = [...prev[currentPeriod].npsData];
+      newData[currentPeriod].npsData[index] = { 
+        ...newData[currentPeriod].npsData[index], 
+        ...data 
+      };
       return newData;
     });
   };
 
   // تحديث بيانات المكالمات
   const updateCallsData = (index: number, data: Partial<CallsData>) => {
-    setCallsData(prev => {
-      const newData = [...prev];
-      newData[index] = { ...newData[index], ...data };
+    setPeriodData(prev => {
+      const newData = { ...prev };
+      newData[currentPeriod].callsData = [...prev[currentPeriod].callsData];
+      newData[currentPeriod].callsData[index] = { 
+        ...newData[currentPeriod].callsData[index], 
+        ...data 
+      };
       return newData;
     });
   };
 
   // إضافة مؤشر جديد
   const addMetric = (data: MetricData) => {
-    setMetrics(prev => [...prev, data]);
+    setPeriodData(prev => {
+      const newData = { ...prev };
+      newData[currentPeriod].metrics = [...prev[currentPeriod].metrics, data];
+      return newData;
+    });
   };
 
   // إضافة بيانات جودة جديدة
   const addQualityData = (data: QualityData) => {
-    setQualityData(prev => [...prev, data]);
+    setPeriodData(prev => {
+      const newData = { ...prev };
+      newData[currentPeriod].qualityData = [...prev[currentPeriod].qualityData, data];
+      return newData;
+    });
   };
 
   // إضافة بيانات ترشيح جديدة
   const addNPSData = (data: NPSData) => {
-    setNpsData(prev => [...prev, data]);
+    setPeriodData(prev => {
+      const newData = { ...prev };
+      newData[currentPeriod].npsData = [...prev[currentPeriod].npsData, data];
+      return newData;
+    });
   };
 
   // إضافة بيانات مكالمات جديدة
   const addCallsData = (data: CallsData) => {
-    setCallsData(prev => [...prev, data]);
+    setPeriodData(prev => {
+      const newData = { ...prev };
+      newData[currentPeriod].callsData = [...prev[currentPeriod].callsData, data];
+      return newData;
+    });
   };
 
   return (
     <MetricsContext.Provider 
       value={{ 
+        currentPeriod,
+        setCurrentPeriod,
         metrics, 
         qualityData, 
         npsData, 
