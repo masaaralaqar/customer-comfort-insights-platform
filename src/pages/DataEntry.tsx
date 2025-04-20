@@ -179,14 +179,42 @@ export default function DataEntry() {
   };
 
   // تحديث البيانات مباشرة عند التغيير
-  const handleCustomerServiceChange = (newData: any) => {
+  const handleCustomerServiceChange = async (newData: any) => {
     setCustomerServiceData(newData);
-    saveChanges();
+    try {
+      await updateCustomerServiceData(newData);
+      addNotification({
+        title: "تم التحديث",
+        message: "تم تحديث بيانات خدمة العملاء بنجاح",
+        type: "success"
+      });
+    } catch (error) {
+      console.error("خطأ في تحديث بيانات خدمة العملاء:", error);
+      addNotification({
+        title: "خطأ",
+        message: "حدث خطأ أثناء تحديث البيانات",
+        type: "error"
+      });
+    }
   };
 
-  const handleMaintenanceSatisfactionChange = (newData: any) => {
+  const handleMaintenanceSatisfactionChange = async (newData: any) => {
     setMaintenanceSatisfaction(newData);
-    saveChanges();
+    try {
+      await updateMaintenanceSatisfactionData(newData);
+      addNotification({
+        title: "تم التحديث",
+        message: "تم تحديث بيانات رضا العملاء عن الصيانة بنجاح",
+        type: "success"
+      });
+    } catch (error) {
+      console.error("خطأ في تحديث بيانات رضا العملاء:", error);
+      addNotification({
+        title: "خطأ",
+        message: "حدث خطأ أثناء تحديث البيانات",
+        type: "error"
+      });
+    }
   };
 
   return (

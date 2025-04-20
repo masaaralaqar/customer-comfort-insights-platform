@@ -601,12 +601,35 @@ export function MetricsProvider({ children }: { children: ReactNode }) {
 
   const updateCustomerServiceData = async (data: CustomerServiceData) => {
     try {
-      // تحديث حالة التطبيق بنسخة جديدة من البيانات
-      setCustomerServiceData(prevData => ({
-        ...prevData,
-        calls: { ...data.calls },
-        inquiries: { ...data.inquiries },
-        maintenance: { ...data.maintenance }
+      // تحديث حالة التطبيق فوراً
+      setCustomerServiceData(data);
+      
+      // تحديث المؤشرات والرسوم البيانية فوراً
+      const updatedMetrics = metrics.map(metric => {
+        if (metric.title === "عدد المكالمات") {
+          return { ...metric, value: String(data.calls.total) };
+        }
+        if (metric.title === "طلبات الصيانة") {
+          return { ...metric, value: String(data.maintenance.inProgress) };
+        }
+        return metric;
+      });
+      
+      setPeriodData(prev => ({
+        ...prev,
+        [currentPeriod]: {
+          ...prev[currentPeriod],
+          metrics: updatedMetrics,
+          callsData: [
+            { category: "شكاوى", count: data.calls.complaints },
+            { category: "طلبات تواصل", count: data.calls.contactRequests },
+            { category: "طلبات صيانة", count: data.calls.maintenanceRequests },
+            { category: "استفسارات", count: data.calls.inquiries },
+            { category: "مهتمين مكاتب", count: data.calls.officeInterested },
+            { category: "مهتمين مشاريع", count: data.calls.projectsInterested },
+            { category: "عملاء مهتمين", count: data.calls.customersInterested }
+          ]
+        }
       }));
       
       // تحديث البيانات ذات الصلة في المؤشرات الأخرى
