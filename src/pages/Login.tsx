@@ -22,6 +22,7 @@ export default function Login() {
     setLoading(true);
     
     try {
+      console.log("Attempting login with:", username, password);
       const success = await login(username, password);
       
       if (success) {
@@ -39,6 +40,7 @@ export default function Login() {
         });
       }
     } catch (error) {
+      console.error("Login error:", error);
       addNotification({
         title: "خطأ",
         message: "حدث خطأ أثناء تسجيل الدخول",

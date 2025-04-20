@@ -17,7 +17,14 @@ import Reports from "./pages/Reports";
 import Maintenance from "./pages/Maintenance";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 // مكون للتحقق من المصادقة
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {

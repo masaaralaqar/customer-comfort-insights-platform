@@ -76,6 +76,8 @@ export default function Settings() {
       type: "success"
     });
     
+    console.log("Added new user:", newUser.username);
+    
     // إعادة تعيين نموذج المستخدم الجديد
     setNewUser({
       username: "",
@@ -103,16 +105,18 @@ export default function Settings() {
     const userToReset = users.find(user => user.id === id);
     if (!userToReset) return;
     
-    // في هذا المثال، نفترض أن المستخدم يعرف كلمة المرور الجديدة
-    const newPassword = "password123";
+    // إنشاء كلمة مرور جديدة للمستخدم
+    const newPassword = prompt("أدخل كلمة المرور الجديدة:", "");
     
-    resetUserPassword(id, newPassword);
-    
-    addNotification({
-      title: "تم التحديث",
-      message: `تم إعادة تعيين كلمة مرور المستخدم ${userToReset.username} بنجاح`,
-      type: "success"
-    });
+    if (newPassword) {
+      resetUserPassword(id, newPassword);
+      
+      addNotification({
+        title: "تم التحديث",
+        message: `تم إعادة تعيين كلمة مرور المستخدم ${userToReset.username} بنجاح`,
+        type: "success"
+      });
+    }
   };
 
   return (

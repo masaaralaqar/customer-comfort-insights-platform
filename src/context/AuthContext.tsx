@@ -66,10 +66,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (username: string, password: string): Promise<boolean> => {
+    console.log('Attempting login with:', username, password);
+    console.log('Available users:', users);
+    
     // البحث عن المستخدم في قائمة المستخدمين المتاحة
     const foundUser = users.find(u => u.username === username && u.password === password);
     
     if (foundUser) {
+      console.log('User found, logging in:', foundUser);
       // إنشاء نسخة جديدة من المستخدم بدون كلمة المرور للأمان
       const userWithoutPassword = { ...foundUser };
       delete userWithoutPassword.password;
@@ -78,6 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(userWithoutPassword));
       return true;
     }
+    console.log('User not found or password incorrect');
     return false;
   };
 
@@ -88,13 +93,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // إضافة مستخدم جديد
   const addUser = (userData: Omit<User, "id">) => {
-    const newId = (users.length + 1).toString();
+    const newId = Math.random().toString(36).substring(2, 9); // Generate more unique ID
     const newUser: User = {
       ...userData,
       id: newId
     };
     
     const updatedUsers = [...users, newUser];
+    console.log('Adding new user:', newUser);
+    console.log('Updated users list:', updatedUsers);
+    
     setUsers(updatedUsers);
     localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
   };
