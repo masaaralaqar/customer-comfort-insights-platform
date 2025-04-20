@@ -130,41 +130,55 @@ export default function DataEntry() {
     });
   };
 
-  const saveChanges = () => {
+  const saveChanges = async () => {
     try {
       // تحديث البيانات الرئيسية
       workingMetrics.forEach((metric, index) => {
-        updateMetric(index, metric);
+        if (metric.value !== metrics[index].value || metric.target !== metrics[index].target) {
+          updateMetric(index, metric);
+        }
       });
       
       // تحديث بيانات الجودة
       workingQualityData.forEach((data, index) => {
-        updateQualityData(index, data);
+        const original = qualityData[index];
+        if (JSON.stringify(data) !== JSON.stringify(original)) {
+          updateQualityData(index, data);
+        }
       });
       
       // تحديث بيانات الترشيح
       workingNPSData.forEach((data, index) => {
-        updateNPSData(index, data);
+        const original = npsData[index];
+        if (JSON.stringify(data) !== JSON.stringify(original)) {
+          updateNPSData(index, data);
+        }
       });
       
       // تحديث بيانات المكالمات
       workingCallsData.forEach((data, index) => {
-        updateCallsData(index, data);
+        const original = callsData[index];
+        if (JSON.stringify(data) !== JSON.stringify(original)) {
+          updateCallsData(index, data);
+        }
       });
 
       // تحديث بيانات خدمة العملاء
-      if (customerServiceData) {
-        updateCustomerServiceData(customerServiceData);
+      if (customerServiceData && customerServiceData.calls.total > 0) {
+        await updateCustomerServiceData(customerServiceData);
       }
 
       // تحديث بيانات رضا العملاء عن الصيانة
-      if (maintenanceSatisfaction) {
+      if (maintenanceSatisfaction && 
+         (maintenanceSatisfaction.serviceQuality > 0 || 
+          maintenanceSatisfaction.closureTime > 0 || 
+          maintenanceSatisfaction.firstTimeResolution > 0)) {
         updateMaintenanceSatisfactionData(maintenanceSatisfaction);
       }
       
       addNotification({
         title: "تم الحفظ",
-        message: `تم تحديث البيانات بنجاح`,
+        message: `تم تحديث البيانات ${currentPeriod === "weekly" ? "الأسبوعية" : "السنوية"} بنجاح`,
         type: "success"
       });
 
@@ -172,7 +186,7 @@ export default function DataEntry() {
       console.error("خطأ في حفظ البيانات:", error);
       addNotification({
         title: "خطأ",
-        message: "حدث خطأ أثناء حفظ البيانات",
+        message: "حدث خطأ أثناء حفظ البيانات: " + (error as Error).message,
         type: "error"
       });
     }
