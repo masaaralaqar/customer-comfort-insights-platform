@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import Layout from "@/components/layout/Layout";
 import { useNotification } from "@/context/NotificationContext";
@@ -76,7 +76,13 @@ export default function Settings() {
       type: "success"
     });
     
-    console.log("Added new user:", newUser.username);
+    console.log("تمت إضافة مستخدم جديد:", newUser.username);
+    
+    // التحقق من أن المستخدم قد تمت إضافته بنجاح
+    const savedUsers = localStorage.getItem('auth_users');
+    if (savedUsers) {
+      console.log('المستخدمون المحفوظون في localStorage بعد الإضافة:', JSON.parse(savedUsers));
+    }
     
     // إعادة تعيين نموذج المستخدم الجديد
     setNewUser({
@@ -118,6 +124,11 @@ export default function Settings() {
       });
     }
   };
+
+  // طباعة حالة المستخدمين في كل مرة يتغير فيها المستخدمون
+  useEffect(() => {
+    console.log('قائمة المستخدمين الحالية في الإعدادات:', users);
+  }, [users]);
 
   return (
     <Layout>

@@ -51,7 +51,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const storedUsers = localStorage.getItem(USERS_STORAGE_KEY);
     if (storedUsers) {
       try {
-        setUsers(JSON.parse(storedUsers));
+        const parsedUsers = JSON.parse(storedUsers);
+        console.log('استرجاع المستخدمين من التخزين المحلي:', parsedUsers);
+        setUsers(parsedUsers);
       } catch (error) {
         console.error('خطأ في استرجاع قائمة المستخدمين:', error);
         // إذا حدث خطأ، استخدم المستخدمين الافتراضيين
@@ -60,20 +62,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     } else {
       // إذا لم يكن هناك مستخدمين محفوظين، استخدم المستخدمين الافتراضيين
+      console.log('لا يوجد مستخدمين محفوظين، استخدام المستخدمين الافتراضيين');
       setUsers(DEFAULT_USERS);
       localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(DEFAULT_USERS));
     }
   }, []);
 
   const login = async (username: string, password: string): Promise<boolean> => {
-    console.log('Attempting login with:', username, password);
-    console.log('Available users:', users);
+    console.log('محاولة تسجيل الدخول باستخدام:', username, password);
+    console.log('المستخدمون المتاحون:', users);
     
     // البحث عن المستخدم في قائمة المستخدمين المتاحة
     const foundUser = users.find(u => u.username === username && u.password === password);
     
     if (foundUser) {
-      console.log('User found, logging in:', foundUser);
+      console.log('تم العثور على المستخدم، تسجيل الدخول:', foundUser);
       // إنشاء نسخة جديدة من المستخدم بدون كلمة المرور للأمان
       const userWithoutPassword = { ...foundUser };
       delete userWithoutPassword.password;
@@ -82,7 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(userWithoutPassword));
       return true;
     }
-    console.log('User not found or password incorrect');
+    console.log('المستخدم غير موجود أو كلمة المرور غير صحيحة');
     return false;
   };
 
@@ -100,10 +103,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
     
     const updatedUsers = [...users, newUser];
-    console.log('Adding new user:', newUser);
-    console.log('Updated users list:', updatedUsers);
+    console.log('إضافة مستخدم جديد:', newUser);
+    console.log('قائمة المستخدمين المحدثة:', updatedUsers);
     
     setUsers(updatedUsers);
+    // حفظ المستخدمين المحدثين في localStorage مباشرة
     localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
   };
 

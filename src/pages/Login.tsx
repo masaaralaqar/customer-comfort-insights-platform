@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useNotification } from "@/context/NotificationContext";
@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, users } = useAuth();
   const { addNotification } = useNotification();
   const navigate = useNavigate();
   
@@ -17,12 +17,33 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   
+  // التحقق من قائمة المستخدمين عند تحميل الصفحة
+  useEffect(() => {
+    console.log("قائمة المستخدمين المتاحة عند تحميل صفحة تسجيل الدخول:", users);
+    const savedUsers = localStorage.getItem('auth_users');
+    if (savedUsers) {
+      console.log('المستخدمون المحفوظون في localStorage:', JSON.parse(savedUsers));
+    }
+  }, [users]);
+  
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     
     try {
-      console.log("Attempting login with:", username, password);
+      console.log("محاولة تسجيل الدخول باستخدام:", username, password);
+      
+      // التحقق من صحة قيم الإدخال
+      if (!username || !password) {
+        addNotification({
+          title: "خطأ في تسجيل الدخول",
+          message: "يرجى إدخال اسم المستخدم وكلمة المرور",
+          type: "error"
+        });
+        setLoading(false);
+        return;
+      }
+      
       const success = await login(username, password);
       
       if (success) {
@@ -40,7 +61,7 @@ export default function Login() {
         });
       }
     } catch (error) {
-      console.error("Login error:", error);
+      console.error("خطأ في تسجيل الدخول:", error);
       addNotification({
         title: "خطأ",
         message: "حدث خطأ أثناء تسجيل الدخول",
