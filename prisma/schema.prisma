@@ -1,3 +1,4 @@
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,22 +9,22 @@ datasource db {
 }
 
 model CustomerServiceData {
-  id                    Int      @id @default(autoincrement())
-  period                String
-  complaints           Int
-  contactRequests      Int
-  maintenanceRequests  Int
-  inquiries            Int
-  officeInterested     Int
-  projectsInterested   Int
-  customersInterested  Int
-  generalInquiries     Int
-  documentRequests     Int
-  deedInquiries        Int
-  apartmentRentals     Int
-  soldProjects         Int
-  maintenanceCancelled Int
-  maintenanceResolved  Int
-  maintenanceInProgress Int
-  createdAt            DateTime @default(now())
+  id                 Int      @id @default(autoincrement())
+  createdAt          DateTime @default(now())
+  period             String
+  complaints         Int
+  contactRequests    Int
+  maintenanceRequests Int
+  inquiries          Int
+  officeInterested   Int
+  projectsInterested Int
+  customersInterested Int
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  password  String
+  role      String
+  createdAt DateTime @default(now())
 }
