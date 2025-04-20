@@ -140,30 +140,32 @@ export default function CustomerService() {
           <TabsContent value="inquiries">
             <Card>
               <CardHeader>
-                <CardTitle>توزيع الاستفسارات</CardTitle>
+                <CardTitle>تفاصيل الاستفسارات</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-[400px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={inquiriesData}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                        outerRadius={150}
-                        fill="#8884d8"
-                        dataKey="count"
-                      >
-                        {inquiriesData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={`hsl(${index * 45}, 70%, 60%)`} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                      <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
+                <div className="relative overflow-x-auto">
+                  <table className="w-full text-sm text-right">
+                    <thead className="text-xs bg-muted">
+                      <tr>
+                        <th className="px-6 py-3">نوع الاستفسار</th>
+                        <th className="px-6 py-3">العدد</th>
+                        <th className="px-6 py-3">النسبة المئوية</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {inquiriesData.map((item, index) => {
+                        const total = inquiriesData.reduce((sum, curr) => sum + curr.count, 0);
+                        const percentage = ((item.count / total) * 100).toFixed(1);
+                        return (
+                          <tr key={index} className="border-b">
+                            <td className="px-6 py-4">{item.category}</td>
+                            <td className="px-6 py-4">{item.count}</td>
+                            <td className="px-6 py-4">{percentage}%</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
               </CardContent>
             </Card>
@@ -172,30 +174,35 @@ export default function CustomerService() {
           <TabsContent value="maintenance">
             <Card>
               <CardHeader>
-                <CardTitle>حالة طلبات الصيانة</CardTitle>
+                <CardTitle>تفاصيل طلبات الصيانة</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-[400px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={maintenanceData}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                        outerRadius={150}
-                        fill="#8884d8"
-                        dataKey="count"
-                      >
-                        {maintenanceData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                      <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
+                <div className="relative overflow-x-auto">
+                  <table className="w-full text-sm text-right">
+                    <thead className="text-xs bg-muted">
+                      <tr>
+                        <th className="px-6 py-3">الحالة</th>
+                        <th className="px-6 py-3">العدد</th>
+                        <th className="px-6 py-3">النسبة المئوية</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {maintenanceData.map((item, index) => {
+                        const total = maintenanceData.reduce((sum, curr) => sum + curr.count, 0);
+                        const percentage = ((item.count / total) * 100).toFixed(1);
+                        return (
+                          <tr key={index} className="border-b">
+                            <td className="px-6 py-4 flex items-center">
+                              <span className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: item.color }}></span>
+                              {item.status}
+                            </td>
+                            <td className="px-6 py-4">{item.count}</td>
+                            <td className="px-6 py-4">{percentage}%</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
               </CardContent>
             </Card>
