@@ -35,6 +35,38 @@ import { useMetrics, MetricData } from "@/context/MetricsContext";
 export default function Dashboard() {
   const { metrics, qualityData, npsData, callsData, currentPeriod, setCurrentPeriod } = useMetrics();
 
+  const customerServiceData = {
+    calls: {
+      customersInterested: 120,
+      projectsInterested: 45,
+      officeInterested: 30,
+      inquiries: 200,
+      maintenanceRequests: 85,
+      contactRequests: 150,
+      complaints: 25,
+      total: 655
+    },
+    inquiries: {
+      soldProjects: 35,
+      apartmentRentals: 42,
+      deedInquiries: 28,
+      documentRequests: 65,
+      general: 95
+    },
+    maintenance: {
+      cancelled: 12,
+      resolved: 65,
+      inProgress: 18
+    }
+  };
+
+  const maintenanceSatisfaction = {
+    serviceQuality: 92,
+    closureTime: 88,
+    firstTimeResolution: 85,
+    comments: "تحسن ملحوظ في سرعة الاستجابة وجودة الخدمة"
+  };
+
   // إضافة أيقونات للمؤشرات
   const getIconForMetric = (index: number) => {
     const icons = [
