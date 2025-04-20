@@ -601,6 +601,7 @@ export function MetricsProvider({ children }: { children: ReactNode }) {
 
   const updateCustomerServiceData = async (data: CustomerServiceData) => {
     try {
+      // Update local state
       setCustomerServiceData(prevData => ({
         ...prevData,
         calls: { ...data.calls },
@@ -608,6 +609,7 @@ export function MetricsProvider({ children }: { children: ReactNode }) {
         maintenance: { ...data.maintenance }
       }));
 
+      // Send data to API
       const response = await fetch('/api/customerService', {
         method: 'POST',
         headers: {
@@ -629,12 +631,7 @@ export function MetricsProvider({ children }: { children: ReactNode }) {
       console.error('خطأ في حفظ البيانات:', error);
       throw new Error('فشل في حفظ البيانات');
     }
-  }; 
-        typeof val === 'number' ? sum + val : sum, 0
-      );
-
-      const response = await fetch('/api/customerService', {
-        method: 'POST',
+  };
         headers: {
           'Content-Type': 'application/json',
         },
