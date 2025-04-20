@@ -41,18 +41,26 @@ export default function DataEntry() {
     });
   };
 
-  const handleQualityDataChange = (index: number, field: keyof typeof workingQualityData[0], value: number) => {
+  const handleQualityDataChange = (index: number, field: keyof typeof workingQualityData[0], value: number | string) => {
     setWorkingQualityData(prev => {
       const newData = [...prev];
-      newData[index][field] = field === 'week' ? value.toString() : value;
+      if (field === 'week') {
+        newData[index][field] = value.toString();
+      } else {
+        newData[index][field as 'facilityManagement' | 'maintenance' | 'delivery'] = Number(value);
+      }
       return newData;
     });
   };
 
-  const handleNPSDataChange = (index: number, field: keyof typeof workingNPSData[0], value: number) => {
+  const handleNPSDataChange = (index: number, field: keyof typeof workingNPSData[0], value: number | string) => {
     setWorkingNPSData(prev => {
       const newData = [...prev];
-      newData[index][field] = field === 'week' ? value.toString() : value;
+      if (field === 'week') {
+        newData[index][field] = value.toString();
+      } else {
+        newData[index][field as 'newCustomers' | 'afterFirstYear' | 'longTerm'] = Number(value);
+      }
       return newData;
     });
   };
