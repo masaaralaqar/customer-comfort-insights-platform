@@ -2,7 +2,7 @@
 import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useMetrics } from "@/context/MetricsContext";
-import { Phone, Clock, MessageSquare, UserCheck, FileText, Tool, HelpCircle } from "lucide-react";
+import { Phone, Clock, MessageSquare, UserCheck, FileText, Wrench, HelpCircle } from "lucide-react";
 import { 
   LineChart, 
   Line, 
@@ -68,7 +68,7 @@ export default function CustomerService() {
     {
       title: "طلبات الصيانة",
       value: currentPeriod === "weekly" ? "65" : "780",
-      icon: <Tool className="h-5 w-5" />,
+      icon: <Wrench className="h-5 w-5" />,
       color: "bg-purple-100 text-purple-800"
     }
   ];
