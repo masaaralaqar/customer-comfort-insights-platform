@@ -129,28 +129,62 @@ export default function DataEntry() {
   };
 
   const saveChanges = () => {
-    // حفظ كل التغييرات للفترة الحالية فقط
-    workingMetrics.forEach((metric, index) => {
-      updateMetric(index, metric);
-    });
-    
-    workingQualityData.forEach((data, index) => {
-      updateQualityData(index, data);
-    });
-    
-    workingNPSData.forEach((data, index) => {
-      updateNPSData(index, data);
-    });
-    
-    workingCallsData.forEach((data, index) => {
-      updateCallsData(index, data);
-    });
-    
-    addNotification({
-      title: "تم الحفظ",
-      message: `تم حفظ بيانات الفترة ${currentPeriod === "weekly" ? "الأسبوعية" : "السنوية"} بنجاح`,
-      type: "success"
-    });
+    try {
+      // تحديث البيانات الرئيسية
+      workingMetrics.forEach((metric, index) => {
+        updateMetric(index, metric);
+      });
+      
+      // تحديث بيانات الجودة
+      workingQualityData.forEach((data, index) => {
+        updateQualityData(index, data);
+      });
+      
+      // تحديث بيانات الترشيح
+      workingNPSData.forEach((data, index) => {
+        updateNPSData(index, data);
+      });
+      
+      // تحديث بيانات المكالمات
+      workingCallsData.forEach((data, index) => {
+        updateCallsData(index, data);
+      });
+
+      // تحديث بيانات خدمة العملاء
+      if (customerServiceData) {
+        updateCustomerServiceData(customerServiceData);
+      }
+
+      // تحديث بيانات رضا العملاء عن الصيانة
+      if (maintenanceSatisfaction) {
+        updateMaintenanceSatisfactionData(maintenanceSatisfaction);
+      }
+      
+      addNotification({
+        title: "تم الحفظ",
+        message: `تم تحديث البيانات بنجاح`,
+        type: "success"
+      });
+
+    } catch (error) {
+      console.error("خطأ في حفظ البيانات:", error);
+      addNotification({
+        title: "خطأ",
+        message: "حدث خطأ أثناء حفظ البيانات",
+        type: "error"
+      });
+    }
+  };
+
+  // تحديث البيانات مباشرة عند التغيير
+  const handleCustomerServiceChange = (newData: any) => {
+    setCustomerServiceData(newData);
+    saveChanges();
+  };
+
+  const handleMaintenanceSatisfactionChange = (newData: any) => {
+    setMaintenanceSatisfaction(newData);
+    saveChanges();
   };
 
   return (
