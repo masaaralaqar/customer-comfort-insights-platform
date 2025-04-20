@@ -601,19 +601,37 @@ export function MetricsProvider({ children }: { children: ReactNode }) {
 
   const updateCustomerServiceData = async (data: CustomerServiceData) => {
     try {
-      // تحديث حالة التطبيق فوراً
+      // تحديث حالة خدمة العملاء
       setCustomerServiceData(data);
       
-      // تحديث المؤشرات والرسوم البيانية فوراً
-      const updatedMetrics = metrics.map(metric => {
-        if (metric.title === "عدد المكالمات") {
-          return { ...metric, value: String(data.calls.total) };
+      // تحديث المؤشرات والرسوم البيانية
+      const total = Object.values(data.calls).reduce((sum, val) => sum + val, 0) - data.calls.total;
+      data.calls.total = total;
+
+      setPeriodData(prev => ({
+        ...prev,
+        [currentPeriod]: {
+          ...prev[currentPeriod],
+          metrics: prev[currentPeriod].metrics.map(metric => {
+            if (metric.title === "إجمالي المكالمات") {
+              return { ...metric, value: String(total) };
+            }
+            if (metric.title === "طلبات الصيانة") {
+              return { ...metric, value: String(data.maintenance.inProgress) };
+            }
+            return metric;
+          }),
+          callsData: [
+            { category: "شكاوى", count: data.calls.complaints },
+            { category: "طلبات تواصل", count: data.calls.contactRequests },
+            { category: "طلبات صيانة", count: data.calls.maintenanceRequests },
+            { category: "استفسارات", count: data.calls.inquiries },
+            { category: "مهتمين مكاتب", count: data.calls.officeInterested },
+            { category: "مهتمين مشاريع", count: data.calls.projectsInterested },
+            { category: "عملاء مهتمين", count: data.calls.customersInterested }
+          ]
         }
-        if (metric.title === "طلبات الصيانة") {
-          return { ...metric, value: String(data.maintenance.inProgress) };
-        }
-        return metric;
-      });
+      }));
       
       setPeriodData(prev => ({
         ...prev,
@@ -679,14 +697,43 @@ export function MetricsProvider({ children }: { children: ReactNode }) {
   };
 
   const updateMaintenanceSatisfactionData = (data: MaintenanceSatisfactionData) => {
-    // تحديث حالة التطبيق بنسخة جديدة من البيانات
-    setMaintenanceSatisfaction(prevData => ({
-      ...prevData,
-      ...data
-    }));
+    // تحديث حالة رضا العملاء
+    setMaintenanceSatisfaction(data);
 
-    // تحديث المؤشرات ذات الصلة
-    const maintenanceMetrics = metrics.map(metric => {
+    // تحديث جميع المؤشرات ذات الصلة
+    setPeriodData(prev => ({
+      ...prev,
+      [currentPeriod]: {
+        ...prev[currentPeriod],
+        metrics: prev[currentPeriod].metrics.map(metric => {
+          if (metric.title === "الرضا عن خدمات الصيانة") {
+            return {
+              ...metric,
+              value: `${data.serviceQuality}%`,
+              change: ((data.serviceQuality - parseFloat(metric.target)) / parseFloat(metric.target)) * 100,
+              isPositive: data.serviceQuality >= parseFloat(metric.target)
+            };
+          }
+          if (metric.title === "الرضا عن مدة إغلاق الطلبات") {
+            return {
+              ...metric,
+              value: `${data.closureTime}%`,
+              change: ((data.closureTime - parseFloat(metric.target)) / parseFloat(metric.target)) * 100,
+              isPositive: data.closureTime >= parseFloat(metric.target)
+            };
+          }
+          if (metric.title === "نسبة الإغلاق من أول مرة") {
+            return {
+              ...metric,
+              value: `${data.firstTimeResolution}%`,
+              change: ((data.firstTimeResolution - parseFloat(metric.target)) / parseFloat(metric.target)) * 100,
+              isPositive: data.firstTimeResolution >= parseFloat(metric.target)
+            };
+          }
+          return metric;
+        })
+      }
+    }));
       if (metric.title === "الرضا عن خدمات الصيانة") {
         return {
           ...metric,
