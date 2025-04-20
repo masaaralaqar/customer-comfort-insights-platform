@@ -656,7 +656,6 @@ export function MetricsProvider({ children }: { children: ReactNode }) {
 
   const updateCustomerServiceData = async (data: CustomerServiceData) => {
     try {
-      // Calculate total calls
       const total = Object.values(data.calls).reduce((sum, val) => 
         typeof val === 'number' && val !== data.calls.total ? sum + val : sum, 0
       );
@@ -669,7 +668,10 @@ export function MetricsProvider({ children }: { children: ReactNode }) {
         }
       };
 
-      // Update local state for current period
+      // Update Firestore
+      await setDoc(doc(db, 'customerService', currentPeriod), updatedData);
+
+      // Update local state
       setCustomerServiceData(prev => ({
         ...prev,
         [currentPeriod]: updatedData,
@@ -696,24 +698,7 @@ export function MetricsProvider({ children }: { children: ReactNode }) {
         } : prev.yearly
       }));
 
-      // Send data to API
-      const response = await fetch('/api/customerService', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          period: currentPeriod,
-          ...updatedData
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('فشل في حفظ البيانات');
-      }
-
-      const result = await response.json();
-      return result;
+      return updatedData;
     } catch (error) {
       console.error('خطأ في حفظ البيانات:', error);
       throw new Error('فشل في حفظ البيانات');

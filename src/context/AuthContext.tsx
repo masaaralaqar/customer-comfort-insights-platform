@@ -1,13 +1,13 @@
-import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
+import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { auth, db } from '@/lib/firebase';
+import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { doc, setDoc, getDoc, collection, getDocs, deleteDoc, updateDoc } from 'firebase/firestore';
 
 interface User {
   id: string;
   username: string;
   role: string;
-  password?: string;
 }
 
 interface AuthContextType {
@@ -15,20 +15,11 @@ interface AuthContextType {
   users: User[];
   isAuthenticated: boolean;
   login: (username: string, password: string) => Promise<boolean>;
-  logout: () => void;
-  addUser: (user: Omit<User, "id">) => Promise<void>;
-  deleteUser: (id: string) => void;
-  resetUserPassword: (id: string, newPassword: string) => void;
+  logout: () => Promise<void>;
+  addUser: (userData: Omit<User, "id">) => Promise<void>;
+  deleteUser: (id: string) => Promise<void>;
+  resetUserPassword: (id: string, newPassword: string) => Promise<void>;
 }
-
-const AUTH_STORAGE_KEY = 'auth_user';
-const USERS_STORAGE_KEY = 'auth_users';
-
-// المستخدمين الافتراضيين إذا لم يكن هناك مستخدمين محفوظين
-const DEFAULT_USERS: User[] = [
-  { id: '1', username: 'admin', role: 'مدير النظام', password: 'admin' },
-  { id: '2', username: 'موظف خدمة العملاء', role: 'موظف خدمة العملاء', password: 'staff123' }
-];
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -36,96 +27,102 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [users, setUsers] = useState<User[]>([]);
 
-  // استرجاع المستخدمين والمستخدم الحالي من localStorage عند بدء التطبيق
   useEffect(() => {
-    // استرجاع المستخدم الحالي
-    const storedUser = localStorage.getItem(AUTH_STORAGE_KEY);
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (error) {
-        console.error('خطأ في استرجاع بيانات المستخدم:', error);
-        localStorage.removeItem(AUTH_STORAGE_KEY);
+    const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
+      if (firebaseUser) {
+        const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+        if (userDoc.exists()) {
+          setUser({
+            id: firebaseUser.uid,
+            ...userDoc.data() as Omit<User, 'id'>
+          });
+        }
+      } else {
+        setUser(null);
       }
-    }
+    });
 
-    // استرجاع قائمة المستخدمين
-    const storedUsers = localStorage.getItem(USERS_STORAGE_KEY);
-    if (storedUsers) {
-      try {
-        const parsedUsers = JSON.parse(storedUsers);
-        console.log('استرجاع المستخدمين من التخزين المحلي:', parsedUsers);
-        setUsers(parsedUsers);
-      } catch (error) {
-        console.error('خطأ في استرجاع قائمة المستخدمين:', error);
-        // إذا حدث خطأ، استخدم المستخدمين الافتراضيين
-        setUsers(DEFAULT_USERS);
-        localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(DEFAULT_USERS));
-      }
-    } else {
-      // إذا لم يكن هناك مستخدمين محفوظين، استخدم المستخدمين الافتراضيين
-      console.log('لا يوجد مستخدمين محفوظين، استخدام المستخدمين الافتراضيين');
-      setUsers(DEFAULT_USERS);
-      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(DEFAULT_USERS));
-    }
+    loadUsers();
+
+    return () => unsubscribe();
   }, []);
 
-  const login = async (username: string, password: string): Promise<boolean> => {
-    console.log('محاولة تسجيل الدخول باستخدام:', username, password);
-    console.log('المستخدمون المتاحون:', users);
+  const loadUsers = async () => {
+    const querySnapshot = await getDocs(collection(db, 'users'));
+    const usersList = querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    } as User));
+    setUsers(usersList);
+  };
 
-    // البحث عن المستخدم في قائمة المستخدمين المتاحة
-    const foundUser = users.find(u => u.username === username && u.password === password);
-
-    if (foundUser) {
-      console.log('تم العثور على المستخدم، تسجيل الدخول:', foundUser);
-      // إنشاء نسخة جديدة من المستخدم بدون كلمة المرور للأمان
-      const userWithoutPassword = { ...foundUser };
-      delete userWithoutPassword.password;
-
-      setUser(userWithoutPassword);
-      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(userWithoutPassword));
-      return true;
+  const login = async (email: string, password: string): Promise<boolean> => {
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid));
+      
+      if (userDoc.exists()) {
+        setUser({
+          id: userCredential.user.uid,
+          ...userDoc.data() as Omit<User, 'id'>
+        });
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Login error:', error);
+      return false;
     }
-    console.log('المستخدم غير موجود أو كلمة المرور غير صحيحة');
-    return false;
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem(AUTH_STORAGE_KEY);
+  const logout = async () => {
+    try {
+      await signOut(auth);
+      setUser(null);
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   };
 
-  // إضافة مستخدم جديد
   const addUser = async (userData: Omit<User, "id">) => {
-    const newUser = await prisma.user.create({
-      data: userData
-    });
-    setUsers(prev => [...prev, newUser]);
+    try {
+      const userRef = doc(collection(db, 'users'));
+      await setDoc(userRef, userData);
+      await loadUsers();
+    } catch (error) {
+      console.error('Error adding user:', error);
+      throw error;
+    }
   };
 
-  // حذف مستخدم
-  const deleteUser = (id: string) => {
-    const updatedUsers = users.filter(user => user.id !== id);
-    setUsers(updatedUsers);
-    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
+  const deleteUser = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, 'users', id));
+      await loadUsers();
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      throw error;
+    }
   };
 
-  // إعادة تعيين كلمة مرور المستخدم
-  const resetUserPassword = (id: string, newPassword: string) => {
-    const updatedUsers = users.map(user => 
-      user.id === id ? { ...user, password: newPassword } : user
-    );
-    setUsers(updatedUsers);
-    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
+  const resetUserPassword = async (id: string, newPassword: string) => {
+    try {
+      await updateDoc(doc(db, 'users', id), {
+        password: newPassword
+      });
+      await loadUsers();
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      throw error;
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      users, 
-      isAuthenticated: !!user, 
-      login, 
+    <AuthContext.Provider value={{
+      user,
+      users,
+      isAuthenticated: !!user,
+      login,
       logout,
       addUser,
       deleteUser,
