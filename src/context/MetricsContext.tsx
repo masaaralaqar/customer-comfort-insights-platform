@@ -656,10 +656,9 @@ export function MetricsProvider({ children }: { children: ReactNode }) {
 
   const updateCustomerServiceData = async (data: CustomerServiceData) => {
     try {
-      // حساب الإجمالي بشكل صحيح
       const total = Object.values(data.calls).reduce((sum, val) => 
         typeof val === 'number' && !isNaN(val) && val >= 0 ? sum + val : sum, 0
-      ) - (data.calls.total || 0); // استثناء الإجمالي من الحساب
+      ) - (data.calls.total || 0);
 
       const updatedData = {
         ...data,
@@ -669,7 +668,6 @@ export function MetricsProvider({ children }: { children: ReactNode }) {
         }
       };
 
-      // تحديث حالة الصفحات المرتبطة
       setPeriodData(prev => ({
         ...prev,
         [currentPeriod]: {
@@ -688,47 +686,6 @@ export function MetricsProvider({ children }: { children: ReactNode }) {
         }
       }));
 
-      // Update local state and metrics simultaneously
-      setPeriodData(prev => {
-        const newMetrics = [...prev[currentPeriod].metrics];
-        
-        // Update total calls metric
-        const totalCallsIndex = newMetrics.findIndex(m => m.title === "معدل الرد على المكالمات");
-        if (totalCallsIndex !== -1) {
-          const target = parseFloat(newMetrics[totalCallsIndex].target);
-          newMetrics[totalCallsIndex] = {
-            ...newMetrics[totalCallsIndex],
-            value: `${total}`,
-            change: ((total - target) / target) * 100,
-            isPositive: total >= target
-          };
-        }
-
-        // Update maintenance requests metric
-        const maintenanceIndex = newMetrics.findIndex(m => m.title === "طلبات الصيانة");
-        if (maintenanceIndex !== -1) {
-          const maintenanceTotal = updatedData.maintenance.resolved + 
-                                 updatedData.maintenance.inProgress + 
-                                 updatedData.maintenance.cancelled;
-          const target = parseFloat(newMetrics[maintenanceIndex].target);
-          newMetrics[maintenanceIndex] = {
-            ...newMetrics[maintenanceIndex],
-            value: `${maintenanceTotal}`,
-            change: ((maintenanceTotal - target) / target) * 100,
-            isPositive: maintenanceTotal >= target
-          };
-        }
-
-        return {
-          ...prev,
-          [currentPeriod]: {
-            ...prev[currentPeriod],
-            metrics: newMetrics
-          }
-        };
-      });
-
-      // Update customer service data
       setCustomerServiceData(prev => ({
         ...prev,
         [currentPeriod]: updatedData
@@ -759,7 +716,6 @@ export function MetricsProvider({ children }: { children: ReactNode }) {
       const closureTimePercentage = calculateSatisfactionPercentage(data.closureTime);
       const firstTimeResolutionPercentage = calculateSatisfactionPercentage(data.firstTimeResolution);
 
-      // تحديث بيانات الرضا
       setMaintenanceSatisfaction(prev => ({
         ...prev,
         [currentPeriod]: {
@@ -768,7 +724,6 @@ export function MetricsProvider({ children }: { children: ReactNode }) {
         }
       }));
 
-      // تحديث المؤشرات المرتبطة
       setPeriodData(prev => ({
         ...prev,
         [currentPeriod]: {
@@ -806,96 +761,10 @@ export function MetricsProvider({ children }: { children: ReactNode }) {
           }))
         }
       }));
-
-    // Update both states simultaneously
-    setPeriodData(prev => {
-      const newMetrics = [...prev[currentPeriod].metrics];
-      
-      // Update satisfaction metrics
-      newMetrics.forEach((metric, index) => {
-        switch (metric.title) {
-          case "جودة الصيانة":
-            newMetrics[index] = {
-              ...metric,
-              value: `${serviceQualityPercentage.toFixed(1)}%`,
-              change: serviceQualityPercentage - parseFloat(metric.target),
-              isPositive: serviceQualityPercentage >= parseFloat(metric.target)
-            };
-            break;
-          case "سرعة إغلاق طلبات الصيانة":
-            newMetrics[index] = {
-              ...metric,
-              value: `${closureTimePercentage.toFixed(1)}%`,
-              change: closureTimePercentage - parseFloat(metric.target),
-              isPositive: closureTimePercentage >= parseFloat(metric.target)
-            };
-            break;
-          case "نسبة الإغلاق من أول مرة":
-            newMetrics[index] = {
-              ...metric,
-              value: `${firstTimeResolutionPercentage.toFixed(1)}%`,
-              change: firstTimeResolutionPercentage - parseFloat(metric.target),
-              isPositive: firstTimeResolutionPercentage >= parseFloat(metric.target)
-            };
-            break;
-        }
-      });
-
-      return {
-        ...prev,
-        [currentPeriod]: {
-          ...prev[currentPeriod],
-          metrics: newMetrics,
-          qualityData: prev[currentPeriod].qualityData.map(item => ({
-            ...item,
-            maintenance: serviceQualityPercentage
-          }))
-        }
-      };
-    });
-
-    setMaintenanceSatisfaction(prev => ({
-      ...prev,
-      [currentPeriod]: {
-        ...data,
-        comments: Array.isArray(data.comments) ? data.comments : [data.comments]
-      }
-    }));
-
-    // Update related metrics
-    setPeriodData(prev => ({
-      ...prev,
-      [currentPeriod]: {
-        ...prev[currentPeriod],
-        metrics: prev[currentPeriod].metrics.map(metric => {
-          switch (metric.title) {
-            case "الرضا عن خدمات الصيانة":
-              return {
-                ...metric,
-                value: `${calculateSatisfactionPercentage(data.serviceQuality).toFixed(1)}%`,
-                change: calculateSatisfactionPercentage(data.serviceQuality) - parseFloat(metric.target),
-                isPositive: calculateSatisfactionPercentage(data.serviceQuality) >= parseFloat(metric.target)
-              };
-            case "الرضا عن مدة إغلاق الطلبات":
-              return {
-                ...metric,
-                value: `${calculateSatisfactionPercentage(data.closureTime).toFixed(1)}%`,
-                change: calculateSatisfactionPercentage(data.closureTime) - parseFloat(metric.target),
-                isPositive: calculateSatisfactionPercentage(data.closureTime) >= parseFloat(metric.target)
-              };
-            case "نسبة الإغلاق من أول مرة":
-              return {
-                ...metric,
-                value: `${calculateSatisfactionPercentage(data.firstTimeResolution).toFixed(1)}%`,
-                change: calculateSatisfactionPercentage(data.firstTimeResolution) - parseFloat(metric.target),
-                isPositive: calculateSatisfactionPercentage(data.firstTimeResolution) >= parseFloat(metric.target)
-              };
-            default:
-              return metric;
-          }
-        })
-      }
-    }));
+    } catch (error) {
+      console.error('خطأ في تحديث بيانات الصيانة:', error);
+      throw new Error('فشل في تحديث بيانات الصيانة');
+    }
   };
 
   return (
