@@ -1,5 +1,7 @@
-
 import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 interface User {
   id: string;
@@ -14,7 +16,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
-  addUser: (user: Omit<User, "id">) => void;
+  addUser: (user: Omit<User, "id">) => Promise<void>;
   deleteUser: (id: string) => void;
   resetUserPassword: (id: string, newPassword: string) => void;
 }
@@ -71,16 +73,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (username: string, password: string): Promise<boolean> => {
     console.log('محاولة تسجيل الدخول باستخدام:', username, password);
     console.log('المستخدمون المتاحون:', users);
-    
+
     // البحث عن المستخدم في قائمة المستخدمين المتاحة
     const foundUser = users.find(u => u.username === username && u.password === password);
-    
+
     if (foundUser) {
       console.log('تم العثور على المستخدم، تسجيل الدخول:', foundUser);
       // إنشاء نسخة جديدة من المستخدم بدون كلمة المرور للأمان
       const userWithoutPassword = { ...foundUser };
       delete userWithoutPassword.password;
-      
+
       setUser(userWithoutPassword);
       localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(userWithoutPassword));
       return true;
@@ -95,20 +97,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   // إضافة مستخدم جديد
-  const addUser = (userData: Omit<User, "id">) => {
-    const newId = Math.random().toString(36).substring(2, 9); // Generate more unique ID
-    const newUser: User = {
-      ...userData,
-      id: newId
-    };
-    
-    const updatedUsers = [...users, newUser];
-    console.log('إضافة مستخدم جديد:', newUser);
-    console.log('قائمة المستخدمين المحدثة:', updatedUsers);
-    
-    setUsers(updatedUsers);
-    // حفظ المستخدمين المحدثين في localStorage مباشرة
-    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
+  const addUser = async (userData: Omit<User, "id">) => {
+    const newUser = await prisma.user.create({
+      data: userData
+    });
+    setUsers(prev => [...prev, newUser]);
   };
 
   // حذف مستخدم
