@@ -14,9 +14,21 @@ const firebaseConfig = {
   measurementId: "G-ZR262TCTMB"
 };
 
-const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const db = getFirestore(app);
-export const analytics = getAnalytics(app);
+let app;
+let auth;
+let db;
+let analytics;
 
-export default app;
+try {
+  app = initializeApp(firebaseConfig);
+  auth = getAuth(app);
+  db = getFirestore(app);
+  // Only initialize analytics if window is available (client-side)
+  if (typeof window !== 'undefined') {
+    analytics = getAnalytics(app);
+  }
+} catch (error) {
+  console.error('Firebase initialization error:', error);
+}
+
+export { app as default, auth, db, analytics };

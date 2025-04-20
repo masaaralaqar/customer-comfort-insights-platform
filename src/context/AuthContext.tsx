@@ -58,7 +58,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
+      if (!auth) {
+        throw new Error('Firebase Auth is not initialized');
+      }
+      
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      if (!db) {
+        throw new Error('Firestore is not initialized');
+      }
+
       const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid));
       
       if (userDoc.exists()) {
@@ -71,7 +79,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return false;
     } catch (error) {
       console.error('Login error:', error);
-      return false;
+      if (error instanceof Error) {
+        throw new Error(`Authentication failed: ${error.message}`);
+      }
+      throw new Error('Authentication failed');
     }
   };
 
