@@ -14,18 +14,17 @@ const firebaseConfig = {
   measurementId: "G-ZR262TCTMB"
 };
 
-try {
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
-  let analytics = null;
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+let analytics = null;
 
-  if (typeof window !== 'undefined') {
+if (typeof window !== 'undefined') {
+  try {
     analytics = getAnalytics(app);
+  } catch (error) {
+    console.error('Firebase Analytics initialization error:', error);
   }
-
-  export { app as default, auth, db, analytics };
-} catch (error) {
-  console.error('Firebase initialization error:', error);
-  throw error;
 }
+
+export { app as default, auth, db, analytics };
