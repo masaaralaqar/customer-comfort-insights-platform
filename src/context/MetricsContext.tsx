@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode } from "react";
-import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
+const prisma = undefined; // Removed PrismaClient initialization
 
 // تعريف أنواع البيانات
 export interface MetricData {
@@ -108,7 +107,7 @@ const defaultMetrics = [
     title: "نسبة الترشيح للعملاء الجدد",
     value: "65%",
     target: "65%",
-    icon: null, // سيتم تعيينه في Dashboard.tsx
+    icon: null,
     change: 2.4,
     isPositive: true,
     reachedTarget: true,
@@ -609,47 +608,24 @@ export function MetricsProvider({ children }: { children: ReactNode }) {
         maintenance: { ...data.maintenance }
       }));
 
-      const total = Object.values(data.calls).reduce((sum, val) => sum + val, 0) - data.calls.total;
-      data.calls.total = total;
+      const total = Object.values(data.calls).reduce((sum, val) => 
+        typeof val === 'number' ? sum + val : sum, 0
+      );
 
-      const newCallsData = [
-        { category: "شكاوى", count: data.calls.complaints },
-        { category: "طلبات تواصل", count: data.calls.contactRequests },
-        { category: "طلبات صيانة", count: data.calls.maintenanceRequests },
-        { category: "استفسارات", count: data.calls.inquiries },
-        { category: "مهتمين مكاتب", count: data.calls.officeInterested },
-        { category: "مهتمين مشاريع", count: data.calls.projectsInterested },
-        { category: "عملاء مهتمين", count: data.calls.customersInterested }
-      ];
-
-      setPeriodData(prev => ({
-        ...prev,
-        [currentPeriod]: {
-          ...prev[currentPeriod],
-          callsData: newCallsData
-        }
-      }));
-
-      await prisma.customerServiceData.create({
-        data: {
+      const response = await fetch('/api/customerService', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           period: currentPeriod,
-          complaints: data.calls.complaints,
-          contactRequests: data.calls.contactRequests,
-          maintenanceRequests: data.calls.maintenanceRequests,
-          inquiries: data.calls.inquiries,
-          officeInterested: data.calls.officeInterested,
-          projectsInterested: data.calls.projectsInterested,
-          customersInterested: data.calls.customersInterested,
-          generalInquiries: data.inquiries.general,
-          documentRequests: data.inquiries.documentRequests,
-          deedInquiries: data.inquiries.deedInquiries,
-          apartmentRentals: data.inquiries.apartmentRentals,
-          soldProjects: data.inquiries.soldProjects,
-          maintenanceCancelled: data.maintenance.cancelled,
-          maintenanceResolved: data.maintenance.resolved,
-          maintenanceInProgress: data.maintenance.inProgress
-        }
+          ...data
+        }),
       });
+
+      if (!response.ok) {
+        throw new Error('فشل في حفظ البيانات');
+      }
     } catch (error) {
       console.error("خطأ في حفظ بيانات خدمة العملاء:", error);
       throw error;
