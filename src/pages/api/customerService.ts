@@ -1,10 +1,12 @@
 
-import { PrismaClient } from '@prisma/client';
-import type { Request, Response } from 'express';
+import type { NextApiRequest, NextApiResponse } from 'next';
+import prisma from '@/lib/prisma';
 
-const prisma = new PrismaClient();
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
 
-export const saveCustomerServiceData = async (req: Request, res: Response) => {
   try {
     const data = req.body;
     const result = await prisma.customerServiceData.create({
@@ -32,4 +34,4 @@ export const saveCustomerServiceData = async (req: Request, res: Response) => {
     console.error(error);
     res.status(500).json({ error: 'حدث خطأ أثناء حفظ البيانات' });
   }
-};
+}
