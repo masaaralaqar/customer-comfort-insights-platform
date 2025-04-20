@@ -12,6 +12,9 @@ import Dashboard from "./pages/Dashboard";
 import DataEntry from "./pages/DataEntry";
 import Complaints from "./pages/Complaints";
 import Settings from "./pages/Settings";
+import CustomerService from "./pages/CustomerService";
+import Reports from "./pages/Reports";
+import Maintenance from "./pages/Maintenance";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,6 +34,9 @@ const App = () => (
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/data-entry" element={<DataEntry />} />
                 <Route path="/complaints" element={<Complaints />} />
+                <Route path="/customer-service" element={<CustomerService />} />
+                <Route path="/reports" element={<Reports />} />
+                <Route path="/maintenance" element={<Maintenance />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
