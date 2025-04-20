@@ -1,46 +1,29 @@
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "sqlite"
+  url      = "file:./dev.db"
 }
 
 model CustomerServiceData {
-  id        String   @id @default(cuid())
-  period    String   // weekly/yearly
-  date      DateTime @default(now())
-  
-  // المكالمات
+  id                    Int      @id @default(autoincrement())
+  period                String
   complaints           Int
   contactRequests      Int
   maintenanceRequests  Int
-  inquiries           Int
-  officeInterested    Int
-  projectsInterested  Int
-  customersInterested Int
-  
-  // الاستفسارات
-  generalInquiries    Int
-  documentRequests    Int
-  deedInquiries      Int
-  apartmentRentals   Int
-  soldProjects       Int
-  
-  // الصيانة
+  inquiries            Int
+  officeInterested     Int
+  projectsInterested   Int
+  customersInterested  Int
+  generalInquiries     Int
+  documentRequests     Int
+  deedInquiries        Int
+  apartmentRentals     Int
+  soldProjects         Int
   maintenanceCancelled Int
-  maintenanceResolved Int
+  maintenanceResolved  Int
   maintenanceInProgress Int
-}
-
-model MaintenanceSatisfaction {
-  id                  String   @id @default(cuid())
-  period              String   // weekly/yearly
-  date                DateTime @default(now())
-  serviceQuality      Float
-  closureTime         Float
-  firstTimeResolution Float
-  comments            String?
+  createdAt            DateTime @default(now())
 }
