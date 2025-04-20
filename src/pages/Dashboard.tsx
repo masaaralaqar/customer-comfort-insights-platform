@@ -4,6 +4,7 @@ import { MetricCard } from "@/components/dashboard/MetricCard";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { 
   BarChart3, 
   LineChart, 
@@ -214,16 +215,111 @@ export default function Dashboard() {
         <div className="space-y-6">
           <h2 className="text-xl font-semibold">خدمة العملاء {currentPeriod === "weekly" ? "الأسبوعية" : "السنوية"}</h2>
           
-          {/* فئة المكالمات */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">عملاء مهتمين</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{customerServiceData.calls.customersInterested}</div>
-              </CardContent>
-            </Card>
+          {/* جدول المكالمات */}
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-right">نوع المكالمة</TableHead>
+                  <TableHead className="text-center">العدد</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow>
+                  <TableCell className="text-right">عملاء مهتمين</TableCell>
+                  <TableCell className="text-center font-bold">{customerServiceData.calls.customersInterested}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="text-right">مهتمين مشاريع</TableCell>
+                  <TableCell className="text-center font-bold">{customerServiceData.calls.projectsInterested}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="text-right">مهتمين مكاتب</TableCell>
+                  <TableCell className="text-center font-bold">{customerServiceData.calls.officeInterested}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="text-right">استفسارات</TableCell>
+                  <TableCell className="text-center font-bold">{customerServiceData.calls.inquiries}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="text-right">طلبات صيانة</TableCell>
+                  <TableCell className="text-center font-bold">{customerServiceData.calls.maintenanceRequests}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="text-right">طلبات تواصل</TableCell>
+                  <TableCell className="text-center font-bold">{customerServiceData.calls.contactRequests}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="text-right">شكاوى</TableCell>
+                  <TableCell className="text-center font-bold">{customerServiceData.calls.complaints}</TableCell>
+                </TableRow>
+                <TableRow className="bg-muted/50">
+                  <TableCell className="text-right font-bold">إجمالي المكالمات</TableCell>
+                  <TableCell className="text-center font-bold">{customerServiceData.calls.total}</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* جدول الاستفسارات */}
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-right">نوع الاستفسار</TableHead>
+                  <TableHead className="text-center">العدد</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow>
+                  <TableCell className="text-right">مشاريع مباعة</TableCell>
+                  <TableCell className="text-center font-bold">{customerServiceData.inquiries.soldProjects}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="text-right">إيجارات شقق</TableCell>
+                  <TableCell className="text-center font-bold">{customerServiceData.inquiries.apartmentRentals}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="text-right">استفسارات الصكوك</TableCell>
+                  <TableCell className="text-center font-bold">{customerServiceData.inquiries.deedInquiries}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="text-right">طلب أوراق</TableCell>
+                  <TableCell className="text-center font-bold">{customerServiceData.inquiries.documentRequests}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="text-right">استفسارات عامة</TableCell>
+                  <TableCell className="text-center font-bold">{customerServiceData.inquiries.general}</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* جدول طلبات الصيانة */}
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-right">حالة الطلب</TableHead>
+                  <TableHead className="text-center">العدد</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow>
+                  <TableCell className="text-right">تم الإلغاء</TableCell>
+                  <TableCell className="text-center font-bold">{customerServiceData.maintenance.cancelled}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="text-right">تم الحل</TableCell>
+                  <TableCell className="text-center font-bold">{customerServiceData.maintenance.resolved}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="text-right">قيد المعالجة</TableCell>
+                  <TableCell className="text-center font-bold">{customerServiceData.maintenance.inProgress}</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
             <Card>
               <CardHeader>
                 <CardTitle className="text-sm">مهتمين مشاريع</CardTitle>
