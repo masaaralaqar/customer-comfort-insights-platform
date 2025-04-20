@@ -193,10 +193,22 @@ export default function DataEntry() {
   };
 
   // تحديث البيانات مباشرة عند التغيير
-  const handleCustomerServiceChange = async (newData: any) => {
-    setCustomerServiceData(newData);
+  const handleCustomerServiceChange = async () => {
     try {
-      await updateCustomerServiceData(newData);
+      // Calculate total calls
+      const total = Object.values(customerServiceData.calls).reduce((sum, val) => 
+        typeof val === 'number' ? sum + val : sum, 0
+      );
+      
+      const updatedData = {
+        ...customerServiceData,
+        calls: {
+          ...customerServiceData.calls,
+          total: total
+        }
+      };
+
+      await updateCustomerServiceData(updatedData);
       addNotification({
         title: "تم التحديث",
         message: "تم تحديث بيانات خدمة العملاء بنجاح",
@@ -212,10 +224,9 @@ export default function DataEntry() {
     }
   };
 
-  const handleMaintenanceSatisfactionChange = async (newData: any) => {
-    setMaintenanceSatisfaction(newData);
+  const handleMaintenanceSatisfactionChange = async () => {
     try {
-      await updateMaintenanceSatisfactionData(newData);
+      await updateMaintenanceSatisfactionData(maintenanceSatisfaction);
       addNotification({
         title: "تم التحديث",
         message: "تم تحديث بيانات رضا العملاء عن الصيانة بنجاح",
@@ -634,6 +645,11 @@ export default function DataEntry() {
                     </div>
                   </div>
                 </div>
+                <div className="flex justify-end mt-4">
+                  <Button onClick={handleCustomerServiceChange}>
+                    حفظ بيانات خدمة العملاء
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -698,6 +714,11 @@ export default function DataEntry() {
                       className="min-h-[100px]"
                     />
                   </div>
+                </div>
+                <div className="flex justify-end mt-4">
+                  <Button onClick={handleMaintenanceSatisfactionChange}>
+                    حفظ بيانات رضا العملاء
+                  </Button>
                 </div>
               </CardContent>
             </Card>
