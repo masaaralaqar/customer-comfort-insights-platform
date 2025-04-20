@@ -599,8 +599,36 @@ export function MetricsProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const updateCustomerServiceData = (data: CustomerServiceData) => {
-    setCustomerServiceData(data);
+  const updateCustomerServiceData = async (data: CustomerServiceData) => {
+    try {
+      // تحديث حالة التطبيق
+      setCustomerServiceData(data);
+      
+      // حفظ في قاعدة البيانات
+      await prisma.customerServiceData.create({
+        data: {
+          period: currentPeriod,
+          complaints: data.calls.complaints,
+          contactRequests: data.calls.contactRequests,
+          maintenanceRequests: data.calls.maintenanceRequests,
+          inquiries: data.calls.inquiries,
+          officeInterested: data.calls.officeInterested,
+          projectsInterested: data.calls.projectsInterested,
+          customersInterested: data.calls.customersInterested,
+          generalInquiries: data.inquiries.general,
+          documentRequests: data.inquiries.documentRequests,
+          deedInquiries: data.inquiries.deedInquiries,
+          apartmentRentals: data.inquiries.apartmentRentals,
+          soldProjects: data.inquiries.soldProjects,
+          maintenanceCancelled: data.maintenance.cancelled,
+          maintenanceResolved: data.maintenance.resolved,
+          maintenanceInProgress: data.maintenance.inProgress
+        }
+      });
+    } catch (error) {
+      console.error("خطأ في حفظ بيانات خدمة العملاء:", error);
+      throw error;
+    }
   };
 
   const updateMaintenanceSatisfactionData = (data: MaintenanceSatisfactionData) => {

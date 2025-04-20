@@ -20,6 +20,8 @@ export default function DataEntry() {
     updateQualityData, 
     updateNPSData, 
     updateCallsData,
+    updateCustomerServiceData,
+    updateMaintenanceSatisfactionData,
     currentPeriod,
     setCurrentPeriod 
   } = useMetrics();

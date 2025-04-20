@@ -4,13 +4,43 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
-model User {
-  id       String @id @default(cuid())
-  username String @unique
-  password String
-  role     String
+model CustomerServiceData {
+  id        String   @id @default(cuid())
+  period    String   // weekly/yearly
+  date      DateTime @default(now())
+  
+  // المكالمات
+  complaints           Int
+  contactRequests      Int
+  maintenanceRequests  Int
+  inquiries           Int
+  officeInterested    Int
+  projectsInterested  Int
+  customersInterested Int
+  
+  // الاستفسارات
+  generalInquiries    Int
+  documentRequests    Int
+  deedInquiries      Int
+  apartmentRentals   Int
+  soldProjects       Int
+  
+  // الصيانة
+  maintenanceCancelled Int
+  maintenanceResolved Int
+  maintenanceInProgress Int
+}
+
+model MaintenanceSatisfaction {
+  id                  String   @id @default(cuid())
+  period              String   // weekly/yearly
+  date                DateTime @default(now())
+  serviceQuality      Float
+  closureTime         Float
+  firstTimeResolution Float
+  comments            String?
 }
