@@ -6,14 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useMetrics } from "@/context/MetricsContext";
 import { useNotification } from "@/context/NotificationContext";
 
 export default function DataEntry() {
   const { metrics, qualityData, npsData, callsData, updateMetric, updateQualityData, updateNPSData, updateCallsData } = useMetrics();
   const { addNotification } = useNotification();
-  const [activeTab, setActiveTab] = useState("metrics");
+  const [period, setPeriod] = useState<"weekly" | "yearly">("weekly");
   
   // نسخة عمل للتعديلات
   const [workingMetrics, setWorkingMetrics] = useState(metrics.map(metric => ({ ...metric })));
@@ -21,105 +20,76 @@ export default function DataEntry() {
   const [workingNPSData, setWorkingNPSData] = useState(npsData.map(item => ({ ...item })));
   const [workingCallsData, setWorkingCallsData] = useState(callsData.map(item => ({ ...item })));
 
-  // تعديل المؤشرات
-  const handleMetricChange = (index: number, field: keyof typeof workingMetrics[0], value: string | number | boolean) => {
+  const handleMetricChange = (index: number, field: string, value: string | number) => {
     setWorkingMetrics(prev => {
       const newMetrics = [...prev];
-      // @ts-ignore - تجاهل خطأ TypeScript هنا لأننا نعلم أن الحقل موجود
-      newMetrics[index][field] = value;
-      
-      // التحقق من تحقيق الهدف
-      if (field === 'value' || field === 'target') {
-        const metricValue = parseFloat(newMetrics[index].value.toString().replace('%', '').replace(' ثانية', '').replace(' يوم', ''));
-        const targetValue = parseFloat(newMetrics[index].target.toString().replace('%', '').replace(' ثانية', '').replace(' يوم', ''));
-        
-        if (!isNaN(metricValue) && !isNaN(targetValue)) {
-          const isLowerBetter = newMetrics[index].isLowerBetter;
-          newMetrics[index].reachedTarget = isLowerBetter 
-            ? metricValue <= targetValue 
-            : metricValue >= targetValue;
-        }
+      if (field === 'value') {
+        newMetrics[index].value = value.toString();
+        // حساب نسبة التغيير
+        const currentValue = parseFloat(value.toString());
+        const targetValue = parseFloat(newMetrics[index].target);
+        const changePercentage = ((currentValue - targetValue) / targetValue) * 100;
+        newMetrics[index].change = Math.round(changePercentage * 10) / 10;
+        newMetrics[index].isPositive = !newMetrics[index].isLowerBetter ? changePercentage > 0 : changePercentage < 0;
+        newMetrics[index].reachedTarget = !newMetrics[index].isLowerBetter 
+          ? currentValue >= targetValue 
+          : currentValue <= targetValue;
+      } else if (field === 'target') {
+        newMetrics[index].target = value.toString();
       }
-      
       return newMetrics;
     });
   };
 
-  // تعديل بيانات الجودة
-  const handleQualityDataChange = (index: number, field: keyof typeof workingQualityData[0], value: string | number) => {
+  const handleQualityDataChange = (index: number, field: keyof typeof workingQualityData[0], value: number) => {
     setWorkingQualityData(prev => {
       const newData = [...prev];
-      // @ts-ignore
-      newData[index][field] = field === 'week' ? value : Number(value);
+      newData[index][field] = field === 'week' ? value.toString() : value;
       return newData;
     });
   };
 
-  // تعديل بيانات الترشيح
-  const handleNPSDataChange = (index: number, field: keyof typeof workingNPSData[0], value: string | number) => {
+  const handleNPSDataChange = (index: number, field: keyof typeof workingNPSData[0], value: number) => {
     setWorkingNPSData(prev => {
       const newData = [...prev];
-      // @ts-ignore
-      newData[index][field] = field === 'week' ? value : Number(value);
+      newData[index][field] = field === 'week' ? value.toString() : value;
       return newData;
     });
   };
 
-  // تعديل بيانات المكالمات
   const handleCallsDataChange = (index: number, field: keyof typeof workingCallsData[0], value: string | number) => {
     setWorkingCallsData(prev => {
       const newData = [...prev];
-      // @ts-ignore
-      newData[index][field] = field === 'category' ? value : Number(value);
+      if (field === 'count') {
+        newData[index][field] = Number(value);
+      } else if (field === 'category') {
+        newData[index][field] = value.toString();
+      }
       return newData;
     });
   };
 
-  // حفظ التغييرات
-  const saveMetrics = () => {
+  const saveChanges = () => {
+    // حفظ كل التغييرات
     workingMetrics.forEach((metric, index) => {
       updateMetric(index, metric);
     });
     
-    addNotification({
-      title: "تم الحفظ",
-      message: "تم حفظ تغييرات المؤشرات بنجاح",
-      type: "success"
-    });
-  };
-
-  const saveQualityData = () => {
     workingQualityData.forEach((data, index) => {
       updateQualityData(index, data);
     });
     
-    addNotification({
-      title: "تم الحفظ",
-      message: "تم حفظ تغييرات بيانات الجودة بنجاح",
-      type: "success"
-    });
-  };
-
-  const saveNPSData = () => {
     workingNPSData.forEach((data, index) => {
       updateNPSData(index, data);
     });
     
-    addNotification({
-      title: "تم الحفظ",
-      message: "تم حفظ تغييرات بيانات الترشيح بنجاح",
-      type: "success"
-    });
-  };
-
-  const saveCallsData = () => {
     workingCallsData.forEach((data, index) => {
       updateCallsData(index, data);
     });
     
     addNotification({
       title: "تم الحفظ",
-      message: "تم حفظ تغييرات بيانات المكالمات بنجاح",
+      message: "تم حفظ جميع البيانات بنجاح",
       type: "success"
     });
   };
@@ -129,9 +99,23 @@ export default function DataEntry() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">إدخال البيانات والمؤشرات</h1>
+          <div className="flex gap-2">
+            <Button
+              variant={period === "weekly" ? "default" : "outline"}
+              onClick={() => setPeriod("weekly")}
+            >
+              أسبوعي
+            </Button>
+            <Button
+              variant={period === "yearly" ? "default" : "outline"}
+              onClick={() => setPeriod("yearly")}
+            >
+              سنوي
+            </Button>
+          </div>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <Tabs defaultValue="metrics" className="space-y-4">
           <TabsList className="grid grid-cols-4 w-full">
             <TabsTrigger value="metrics">مؤشرات الأداء</TabsTrigger>
             <TabsTrigger value="quality">بيانات الجودة</TabsTrigger>
@@ -139,265 +123,177 @@ export default function DataEntry() {
             <TabsTrigger value="calls">بيانات المكالمات</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="metrics" className="space-y-4">
+          <TabsContent value="metrics">
             <Card>
               <CardHeader>
-                <CardTitle>تحديث مؤشرات الأداء</CardTitle>
+                <CardTitle>تحديث مؤشرات الأداء {period === "weekly" ? "الأسبوعية" : "السنوية"}</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="bg-muted/50 p-4 rounded-md mb-4">
-                  <p className="text-sm text-muted-foreground">قم بتحديث قيم المؤشرات. كل التغييرات ستنعكس في لوحة التحكم الرئيسية بعد الحفظ.</p>
-                </div>
-                
-                <div className="space-y-6">
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {workingMetrics.map((metric, index) => (
-                    <div key={index} className="border rounded-md p-4 space-y-3">
-                      <h3 className="font-medium text-lg">{metric.title}</h3>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor={`value-${index}`}>القيمة الحالية</Label>
+                    <div key={index} className="space-y-4 border rounded-lg p-4">
+                      <h3 className="font-medium">{metric.title}</h3>
+                      <div className="space-y-4">
+                        <div>
+                          <Label>القيمة الحالية</Label>
                           <Input
-                            id={`value-${index}`}
-                            value={metric.value}
+                            type="number"
+                            value={metric.value.replace(/[^0-9.]/g, '')}
                             onChange={(e) => handleMetricChange(index, 'value', e.target.value)}
                           />
                         </div>
-                        
-                        <div className="space-y-2">
-                          <Label htmlFor={`target-${index}`}>القيمة المستهدفة</Label>
+                        <div>
+                          <Label>القيمة المستهدفة</Label>
                           <Input
-                            id={`target-${index}`}
-                            value={metric.target}
+                            type="number"
+                            value={metric.target.replace(/[^0-9.]/g, '')}
                             onChange={(e) => handleMetricChange(index, 'target', e.target.value)}
                           />
                         </div>
-                        
-                        <div className="space-y-2">
-                          <Label htmlFor={`change-${index}`}>نسبة التغيير</Label>
-                          <Input
-                            id={`change-${index}`}
-                            type="number"
-                            step="0.1"
-                            value={metric.change}
-                            onChange={(e) => handleMetricChange(index, 'change', parseFloat(e.target.value))}
-                          />
-                        </div>
-                        
-                        <div className="space-y-2 md:col-span-3">
-                          <div className="flex flex-wrap gap-4">
-                            <div className="flex items-center space-x-2">
-                              <input
-                                type="checkbox"
-                                id={`isPositive-${index}`}
-                                checked={metric.isPositive}
-                                onChange={(e) => handleMetricChange(index, 'isPositive', e.target.checked)}
-                                className="h-4 w-4"
-                              />
-                              <Label htmlFor={`isPositive-${index}`}>التغيير إيجابي</Label>
-                            </div>
-                            
-                            <div className="flex items-center space-x-2">
-                              <input
-                                type="checkbox"
-                                id={`isLowerBetter-${index}`}
-                                checked={metric.isLowerBetter}
-                                onChange={(e) => handleMetricChange(index, 'isLowerBetter', e.target.checked)}
-                                className="h-4 w-4"
-                              />
-                              <Label htmlFor={`isLowerBetter-${index}`}>القيمة الأقل أفضل</Label>
-                            </div>
-                          </div>
-                        </div>
                       </div>
                     </div>
                   ))}
                 </div>
-                
-                <Button onClick={saveMetrics} className="mt-6">حفظ التغييرات</Button>
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="quality" className="space-y-4">
+          <TabsContent value="quality">
             <Card>
               <CardHeader>
-                <CardTitle>تحديث بيانات الجودة</CardTitle>
+                <CardTitle>تحديث بيانات الجودة {period === "weekly" ? "الأسبوعية" : "السنوية"}</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="bg-muted/50 p-4 rounded-md mb-4">
-                  <p className="text-sm text-muted-foreground">تحديث بيانات الجودة للرسوم البيانية</p>
-                </div>
-                
                 <div className="space-y-6">
-                  {workingQualityData.map((item, index) => (
-                    <div key={index} className="border rounded-md p-4 space-y-3">
+                  {workingQualityData.map((data, index) => (
+                    <div key={index} className="border rounded-lg p-4">
                       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor={`week-quality-${index}`}>الأسبوع</Label>
+                        <div>
+                          <Label>جودة إدارة المرافق (%)</Label>
                           <Input
-                            id={`week-quality-${index}`}
-                            value={item.week}
-                            onChange={(e) => handleQualityDataChange(index, 'week', e.target.value)}
-                          />
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <Label htmlFor={`facilityManagement-${index}`}>جودة إدارة المرافق (%)</Label>
-                          <Input
-                            id={`facilityManagement-${index}`}
                             type="number"
                             min="0"
                             max="100"
-                            value={item.facilityManagement}
-                            onChange={(e) => handleQualityDataChange(index, 'facilityManagement', e.target.value)}
+                            value={data.facilityManagement}
+                            onChange={(e) => handleQualityDataChange(index, 'facilityManagement', Number(e.target.value))}
                           />
                         </div>
-                        
-                        <div className="space-y-2">
-                          <Label htmlFor={`maintenance-${index}`}>جودة الصيانة (%)</Label>
+                        <div>
+                          <Label>جودة الصيانة (%)</Label>
                           <Input
-                            id={`maintenance-${index}`}
                             type="number"
                             min="0"
                             max="100"
-                            value={item.maintenance}
-                            onChange={(e) => handleQualityDataChange(index, 'maintenance', e.target.value)}
+                            value={data.maintenance}
+                            onChange={(e) => handleQualityDataChange(index, 'maintenance', Number(e.target.value))}
                           />
                         </div>
-                        
-                        <div className="space-y-2">
-                          <Label htmlFor={`delivery-${index}`}>جودة التسليم (%)</Label>
+                        <div>
+                          <Label>جودة التسليم (%)</Label>
                           <Input
-                            id={`delivery-${index}`}
                             type="number"
                             min="0"
                             max="100"
-                            value={item.delivery}
-                            onChange={(e) => handleQualityDataChange(index, 'delivery', e.target.value)}
+                            value={data.delivery}
+                            onChange={(e) => handleQualityDataChange(index, 'delivery', Number(e.target.value))}
                           />
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
-                
-                <Button onClick={saveQualityData} className="mt-6">حفظ التغييرات</Button>
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="nps" className="space-y-4">
+          <TabsContent value="nps">
             <Card>
               <CardHeader>
-                <CardTitle>تحديث بيانات الترشيح</CardTitle>
+                <CardTitle>تحديث بيانات الترشيح {period === "weekly" ? "الأسبوعية" : "السنوية"}</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="bg-muted/50 p-4 rounded-md mb-4">
-                  <p className="text-sm text-muted-foreground">تحديث بيانات نسب الترشيح للرسوم البيانية</p>
-                </div>
-                
                 <div className="space-y-6">
-                  {workingNPSData.map((item, index) => (
-                    <div key={index} className="border rounded-md p-4 space-y-3">
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor={`week-nps-${index}`}>الأسبوع</Label>
+                  {workingNPSData.map((data, index) => (
+                    <div key={index} className="border rounded-lg p-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <Label>نسبة الترشيح للعملاء الجدد (%)</Label>
                           <Input
-                            id={`week-nps-${index}`}
-                            value={item.week}
-                            onChange={(e) => handleNPSDataChange(index, 'week', e.target.value)}
-                          />
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <Label htmlFor={`newCustomers-${index}`}>نسبة الترشيح للعملاء الجدد (%)</Label>
-                          <Input
-                            id={`newCustomers-${index}`}
                             type="number"
                             min="0"
                             max="100"
-                            value={item.newCustomers}
-                            onChange={(e) => handleNPSDataChange(index, 'newCustomers', e.target.value)}
+                            value={data.newCustomers}
+                            onChange={(e) => handleNPSDataChange(index, 'newCustomers', Number(e.target.value))}
                           />
                         </div>
-                        
-                        <div className="space-y-2">
-                          <Label htmlFor={`afterFirstYear-${index}`}>نسبة الترشيح بعد السنة (%)</Label>
+                        <div>
+                          <Label>نسبة الترشيح بعد السنة (%)</Label>
                           <Input
-                            id={`afterFirstYear-${index}`}
                             type="number"
                             min="0"
                             max="100"
-                            value={item.afterFirstYear}
-                            onChange={(e) => handleNPSDataChange(index, 'afterFirstYear', e.target.value)}
+                            value={data.afterFirstYear}
+                            onChange={(e) => handleNPSDataChange(index, 'afterFirstYear', Number(e.target.value))}
                           />
                         </div>
-                        
-                        <div className="space-y-2">
-                          <Label htmlFor={`longTerm-${index}`}>نسبة الترشيح للعملاء القدامى (%)</Label>
+                        <div>
+                          <Label>نسبة الترشيح للعملاء القدامى (%)</Label>
                           <Input
-                            id={`longTerm-${index}`}
                             type="number"
                             min="0"
                             max="100"
-                            value={item.longTerm}
-                            onChange={(e) => handleNPSDataChange(index, 'longTerm', e.target.value)}
+                            value={data.longTerm}
+                            onChange={(e) => handleNPSDataChange(index, 'longTerm', Number(e.target.value))}
                           />
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
-                
-                <Button onClick={saveNPSData} className="mt-6">حفظ التغييرات</Button>
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="calls" className="space-y-4">
+          <TabsContent value="calls">
             <Card>
               <CardHeader>
                 <CardTitle>تحديث بيانات المكالمات</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="bg-muted/50 p-4 rounded-md mb-4">
-                  <p className="text-sm text-muted-foreground">تحديث بيانات أنواع المكالمات للرسوم البيانية</p>
-                </div>
-                
                 <div className="space-y-6">
-                  {workingCallsData.map((item, index) => (
-                    <div key={index} className="border rounded-md p-4 space-y-3">
+                  {workingCallsData.map((data, index) => (
+                    <div key={index} className="border rounded-lg p-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor={`category-${index}`}>فئة المكالمة</Label>
+                        <div>
+                          <Label>نوع المكالمة</Label>
                           <Input
-                            id={`category-${index}`}
-                            value={item.category}
+                            value={data.category}
                             onChange={(e) => handleCallsDataChange(index, 'category', e.target.value)}
                           />
                         </div>
-                        
-                        <div className="space-y-2">
-                          <Label htmlFor={`count-${index}`}>عدد المكالمات</Label>
+                        <div>
+                          <Label>عدد المكالمات</Label>
                           <Input
-                            id={`count-${index}`}
                             type="number"
                             min="0"
-                            value={item.count}
-                            onChange={(e) => handleCallsDataChange(index, 'count', e.target.value)}
+                            value={data.count}
+                            onChange={(e) => handleCallsDataChange(index, 'count', Number(e.target.value))}
                           />
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
-                
-                <Button onClick={saveCallsData} className="mt-6">حفظ التغييرات</Button>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
+
+        <div className="flex justify-end">
+          <Button onClick={saveChanges} size="lg">
+            حفظ جميع التغييرات
+          </Button>
+        </div>
       </div>
     </Layout>
   );
