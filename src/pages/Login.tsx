@@ -63,8 +63,8 @@ export default function Login() {
     } catch (error) {
       console.error("خطأ في تسجيل الدخول:", error);
       addNotification({
-        title: "خطأ",
-        message: "حدث خطأ أثناء تسجيل الدخول",
+        title: "خطأ في تسجيل الدخول",
+        message: "اسم المستخدم أو كلمة المرور غير صحيحة",
         type: "error"
       });
     } finally {

@@ -55,22 +55,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUsers(usersList);
   };
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (username: string, password: string): Promise<boolean> => {
     try {
-      if (!auth || !db) {
-        throw new Error('Firebase services not initialized');
-      }
-
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid));
-
-      if (userDoc.exists()) {
+      // First check local users
+      const localUsers = JSON.parse(localStorage.getItem('auth_users') || '[]');
+      const user = localUsers.find((u: User) => 
+        u.username === username && u.password === password
+      );
+      
+      if (user) {
         setUser({
-          id: userCredential.user.uid,
-          ...userDoc.data() as Omit<User, 'id'>
+          id: user.id,
+          username: user.username,
+          role: user.role
         });
         return true;
       }
+      
       return false;
     } catch (error) {
       console.error('Login error:', error);
