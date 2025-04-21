@@ -1,79 +1,148 @@
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import React, { useState, useEffect } from "react";
+import { BrowserRouter, Route, Routes, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider, useAuth } from "@/context/AuthContext";
-import { NotificationProvider } from "@/context/NotificationContext";
-import { MetricsProvider } from "@/context/MetricsContext";
+import { Toaster } from "sonner";
+import { TooltipProvider } from "@radix-ui/react-tooltip";
+import { AuthProvider, useAuth } from "./context/AuthContext";
+import { MetricsProvider } from "./context/MetricsContext";
+import { NotificationProvider } from "./context/NotificationContext";
+
+// Import pages
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
-import DataEntry from "./pages/DataEntry";
 import Complaints from "./pages/Complaints";
-import Settings from "./pages/Settings";
 import CustomerService from "./pages/CustomerService";
-import Reports from "./pages/Reports";
+import DataEntry from "./pages/DataEntry";
+import Index from "./pages/Index";
 import Maintenance from "./pages/Maintenance";
 import NotFound from "./pages/NotFound";
+import Reports from "./pages/Reports";
+import Settings from "./pages/Settings";
+// Import new pages
+import CustomerServiceDashboard from "./pages/CustomerServiceDashboard";
+import MaintenanceSatisfaction from "./pages/MaintenanceSatisfaction";
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      refetchOnWindowFocus: false,
-    },
-  },
-});
+import "./App.css";
 
-// مكون للتحقق من المصادقة
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+// Create a client
+const queryClient = new QueryClient();
+
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+}
+
+const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { isAuthenticated } = useAuth();
-  
+  const location = useLocation();
+
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
-  
+
   return <>{children}</>;
 };
 
 const AppRoutes = () => {
-  const { isAuthenticated } = useAuth();
-  
   return (
     <Routes>
-      <Route path="/" element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />} />
-      <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />} />
-      
-      {/* المسارات المحمية */}
-      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-      <Route path="/data-entry" element={<ProtectedRoute><DataEntry /></ProtectedRoute>} />
-      <Route path="/complaints" element={<ProtectedRoute><Complaints /></ProtectedRoute>} />
-      <Route path="/customer-service" element={<ProtectedRoute><CustomerService /></ProtectedRoute>} />
-      <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
-      <Route path="/maintenance" element={<ProtectedRoute><Maintenance /></ProtectedRoute>} />
-      <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+      <Route path="/" element={<Index />} />
+      <Route path="/login" element={<Login />} />
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/complaints"
+        element={
+          <ProtectedRoute>
+            <Complaints />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/customer-service"
+        element={
+          <ProtectedRoute>
+            <CustomerService />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/data-entry"
+        element={
+          <ProtectedRoute>
+            <DataEntry />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/maintenance"
+        element={
+          <ProtectedRoute>
+            <Maintenance />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/reports"
+        element={
+          <ProtectedRoute>
+            <Reports />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/settings"
+        element={
+          <ProtectedRoute>
+            <Settings />
+          </ProtectedRoute>
+        }
+      />
+      {/* Add new routes */}
+      <Route
+        path="/customer-service-dashboard"
+        element={
+          <ProtectedRoute>
+            <CustomerServiceDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/maintenance-satisfaction"
+        element={
+          <ProtectedRoute>
+            <MaintenanceSatisfaction />
+          </ProtectedRoute>
+        }
+      />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
 };
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <NotificationProvider>
-        <MetricsProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <AppRoutes />
-            </BrowserRouter>
-          </TooltipProvider>
-        </MetricsProvider>
-      </NotificationProvider>
-    </AuthProvider>
-  </QueryClientProvider>
-);
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <NotificationProvider>
+          <MetricsProvider>
+            <TooltipProvider>
+              <BrowserRouter>
+                <AppRoutes />
+                <Toaster richColors position="top-center" />
+              </BrowserRouter>
+            </TooltipProvider>
+          </MetricsProvider>
+        </NotificationProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  );
+}
 
 export default App;
