@@ -32,7 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const { data: profile } = await supabase
           .from('users')
           .select('*')
-          .eq('id', session.user.id)
+          .eq('id', Number(session.user.id))
           .single();
           
         if (profile) {
@@ -54,7 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const { data: profile } = await supabase
           .from('users')
           .select('*')
-          .eq('id', session.user.id)
+          .eq('id', Number(session.user.id))
           .single();
           
         if (profile) {
@@ -167,7 +167,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { error } = await supabase
         .from('users')
         .delete()
-        .eq('id', id);
+        .eq('id', Number(id));
         
       if (error) throw error;
       await loadUsers();
@@ -182,7 +182,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { error } = await supabase
         .from('users')
         .update({ password: newPassword })
-        .eq('id', id);
+        .eq('id', Number(id));
         
       if (error) throw error;
       await loadUsers();

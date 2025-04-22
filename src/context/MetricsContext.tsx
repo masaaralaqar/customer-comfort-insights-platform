@@ -655,7 +655,7 @@ export function MetricsProvider({ children }: { children: ReactNode }) {
     }));
   };
 
-  const updateCustomerServiceData = async (data: CustomerServiceData): Promise<void> => {
+  const updateCustomerServiceData = async (data: CustomerServiceData) => {
     try {
       const total = Object.values(data.calls).reduce((sum, val) => 
         typeof val === 'number' && !isNaN(val) && val >= 0 ? sum + val : sum, 0

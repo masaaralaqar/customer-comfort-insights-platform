@@ -1,365 +1,200 @@
-import React from 'react';
-import Layout from '@/components/layout/Layout';
-import { MetricCard } from "@/components/dashboard/MetricCard";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
+
+import { useState, useEffect } from "react";
+import Layout from "@/components/layout/Layout";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  BarChart3, 
-  LineChart, 
-  Activity, 
-  Users, 
-  Timer, 
-  Phone, 
-  Percent, 
-  FileText, 
-  Wrench, 
-  Clock, 
-  UserCheck, 
-  Briefcase 
-} from "lucide-react";
-import { 
-  LineChart as RechartsLineChart, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
-  ResponsiveContainer,
-  BarChart as RechartsBarChart,
-  Bar
-} from "recharts";
+import { Button } from "@/components/ui/button";
 import { useMetrics } from "@/context/MetricsContext";
+import MetricCard from "@/components/dashboard/MetricCard";
+import { BarChart } from "@/components/charts/BarChart";
+import { LineChart } from "@/components/charts/LineChart";
+import { PieChart } from "@/components/charts/PieChart";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Dashboard() {
-  const {
-    metrics,
-    qualityData,
-    npsData,
-    callsData,
-    currentPeriod,
-    setCurrentPeriod
-  } = useMetrics();
+  const { metrics, qualityData, npsData, callsData, currentPeriod, setCurrentPeriod } = useMetrics();
+  const [recentComplaints, setRecentComplaints] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const customerServiceData = {
-    calls: {
-      customersInterested: 120,
-      projectsInterested: 45,
-      officeInterested: 30,
-      inquiries: 200,
-      maintenanceRequests: 85,
-      contactRequests: 150,
-      complaints: 25,
-      total: 655
-    },
-    inquiries: {
-      soldProjects: 35,
-      apartmentRentals: 42,
-      deedInquiries: 28,
-      documentRequests: 65,
-      general: 95
-    },
-    maintenance: {
-      cancelled: 12,
-      resolved: 65,
-      inProgress: 18
-    }
-  };
+  useEffect(() => {
+    const loadComplaints = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('complaints')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(5);
+          
+        if (error) throw error;
+        setRecentComplaints(data || []);
+      } catch (error) {
+        console.error('Error loading complaints:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadComplaints();
+  }, []);
 
-  const maintenanceSatisfaction = {
-    serviceQuality: 92,
-    closureTime: 88,
-    firstTimeResolution: 85,
-    comments: "تحسن ملحوظ في سرعة الاستجابة وجودة الخدمة"
-  };
+  // Transform data for charts
+  const qualityChartData = qualityData.map(item => ({
+    name: item.week,
+    'جودة المرافق': item.facilityManagement,
+    'جودة الصيانة': item.maintenance,
+    'جودة التسليم': item.delivery,
+  }));
 
-  const getIconForMetric = (index: number) => {
-    const icons = [
-      <Users key="users1" />,
-      <Users key="users2" />,
-      <Users key="users3" />,
-      <Activity key="activity" />,
-      <Wrench key="wrench" />,
-      <Timer key="timer" />,
-      <Phone key="phone" />,
-      <UserCheck key="usercheck1" />,
-      <Clock key="clock" />,
-      <FileText key="filetext" />,
-      <Briefcase key="briefcase" />,
-      <Percent key="percent1" />,
-      <UserCheck key="usercheck2" />,
-      <Users key="users4" />,
-      <Percent key="percent2" />
-    ];
-    return icons[index] || <Activity />;
-  };
+  const npsChartData = npsData.map(item => ({
+    name: item.week,
+    'العملاء الجدد': item.newCustomers,
+    'بعد السنة الأولى': item.afterFirstYear,
+    'العملاء القدامى': item.longTerm,
+  }));
 
-  const metricsWithIcons = metrics.map((metric, index) => ({
-    ...metric,
-    icon: getIconForMetric(index)
+  const callsChartData = callsData.map(item => ({
+    name: item.category,
+    value: item.count,
   }));
 
   return (
     <Layout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">لوحة التحكم الرئيسية</h1>
-          <div className="flex gap-2">
+      <div className="space-y-8">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 text-transparent bg-clip-text">لوحة المؤشرات</h1>
+          
+          <div className="flex flex-wrap gap-2">
             <Button
               variant={currentPeriod === "weekly" ? "default" : "outline"}
               onClick={() => setCurrentPeriod("weekly")}
+              className="transition-all shadow-sm hover:shadow"
             >
               أسبوعي
             </Button>
             <Button
               variant={currentPeriod === "yearly" ? "default" : "outline"}
               onClick={() => setCurrentPeriod("yearly")}
+              className="transition-all shadow-sm hover:shadow"
             >
               سنوي
             </Button>
           </div>
         </div>
 
-        <h2 className="text-xl font-semibold mb-2">مؤشرات الأداء الرئيسية {currentPeriod === "weekly" ? "الأسبوعية" : "السنوية"}</h2>
-
-        <div className="dashboard-grid">
-          {metricsWithIcons.map((metric, index) => (
-            <MetricCard
-              key={index}
-              title={metric.title}
-              value={metric.value}
-              target={metric.target}
-              icon={metric.icon}
-              change={metric.change}
-              isPositive={metric.isPositive}
-              reachedTarget={metric.reachedTarget}
-              isLowerBetter={metric.isLowerBetter}
-            />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {metrics.map((metric, index) => (
+            <MetricCard key={index} metric={metric} className="card-hover transition-all" />
           ))}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-          <div className="chart-container">
-            <h3 className="text-lg font-semibold mb-4">مؤشرات الجودة {currentPeriod === "weekly" ? "الأسبوعية" : "السنوية"}</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <RechartsLineChart
-                data={qualityData}
-                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="week" />
-                <YAxis domain={[85, 100]} />
-                <Tooltip />
-                <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="delivery"
-                  name="جودة التسليم"
-                  stroke="#10b981"
-                  activeDot={{ r: 8 }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="maintenance"
-                  name="جودة الصيانة"
-                  stroke="#f97316"
-                  activeDot={{ r: 8 }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="facilityManagement"
-                  name="جودة إدارة المرافق"
-                  stroke="#10b981"
-                  activeDot={{ r: 8 }}
-                />
-              </RechartsLineChart>
-            </ResponsiveContainer>
-          </div>
+        <Tabs defaultValue="quality" className="space-y-6">
+          <TabsList className="grid grid-cols-1 sm:grid-cols-3 w-full bg-white/40 backdrop-blur-sm p-1 rounded-lg">
+            <TabsTrigger value="quality" className="text-sm md:text-base">جودة الخدمات</TabsTrigger>
+            <TabsTrigger value="nps" className="text-sm md:text-base">مؤشرات الترشيح</TabsTrigger>
+            <TabsTrigger value="calls" className="text-sm md:text-base">توزيع المكالمات</TabsTrigger>
+          </TabsList>
 
-          <div className="chart-container">
-            <h3 className="text-lg font-semibold mb-4">مؤشرات الترشيح {currentPeriod === "weekly" ? "الأسبوعية" : "السنوية"}</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <RechartsLineChart
-                data={npsData}
-                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="week" />
-                <YAxis domain={[25, 75]} />
-                <Tooltip />
-                <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="newCustomers"
-                  name="نسبة الترشيح للعملاء الجدد"
-                  stroke="#3b82f6"
-                  activeDot={{ r: 8 }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="afterFirstYear"
-                  name="نسبة الترشيح بعد السنة"
-                  stroke="#2563eb"
-                  activeDot={{ r: 8 }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="longTerm"
-                  name="نسبة الترشيح للعملاء القدامى"
-                  stroke="#ef4444"
-                  activeDot={{ r: 8 }}
-                />
-              </RechartsLineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+          <TabsContent value="quality" className="bg-white/70 backdrop-blur-sm rounded-lg shadow-sm">
+            <Card className="border-none bg-transparent">
+              <CardHeader>
+                <CardTitle>مؤشرات الجودة {currentPeriod === "weekly" ? "الأسبوعية" : "السنوية"}</CardTitle>
+                <CardDescription>جودة إدارة المرافق، الصيانة والتسليم</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-80 w-full">
+                  <LineChart 
+                    data={qualityChartData} 
+                    colors={['#10b981', '#3b82f6', '#f97316']} 
+                    gridClassName="text-gray-400 opacity-30"
+                    legendClassName="text-sm text-gray-600"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-        <div className="space-y-6">
-          <h2 className="text-xl font-semibold">خدمة العملاء {currentPeriod === "weekly" ? "الأسبوعية" : "السنوية"}</h2>
+          <TabsContent value="nps" className="bg-white/70 backdrop-blur-sm rounded-lg shadow-sm">
+            <Card className="border-none bg-transparent">
+              <CardHeader>
+                <CardTitle>مؤشرات الترشيح {currentPeriod === "weekly" ? "الأسبوعية" : "السنوية"}</CardTitle>
+                <CardDescription>نسبة الترشيح للعملاء الجدد، بعد السنة الأولى، والعملاء القدامى</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-80 w-full">
+                  <BarChart 
+                    data={npsChartData} 
+                    colors={['#22c55e', '#8b5cf6', '#ef4444']} 
+                    gridClassName="text-gray-400 opacity-30"
+                    legendClassName="text-sm text-gray-600"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-right">نوع المكالمة</TableHead>
-                  <TableHead className="text-center">العدد</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                <TableRow>
-                  <TableCell className="text-right">عملاء مهتمين</TableCell>
-                  <TableCell className="text-center font-bold">{customerServiceData.calls.customersInterested}</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell className="text-right">مهتمين مشاريع</TableCell>
-                  <TableCell className="text-center font-bold">{customerServiceData.calls.projectsInterested}</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell className="text-right">مهتمين مكاتب</TableCell>
-                  <TableCell className="text-center font-bold">{customerServiceData.calls.officeInterested}</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell className="text-right">استفسارات</TableCell>
-                  <TableCell className="text-center font-bold">{customerServiceData.calls.inquiries}</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell className="text-right">طلبات صيانة</TableCell>
-                  <TableCell className="text-center font-bold">{customerServiceData.calls.maintenanceRequests}</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell className="text-right">طلبات تواصل</TableCell>
-                  <TableCell className="text-center font-bold">{customerServiceData.calls.contactRequests}</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell className="text-right">شكاوى</TableCell>
-                  <TableCell className="text-center font-bold">{customerServiceData.calls.complaints}</TableCell>
-                </TableRow>
-                <TableRow className="bg-muted/50">
-                  <TableCell className="text-right font-bold">إجمالي المكالمات</TableCell>
-                  <TableCell className="text-center font-bold">{customerServiceData.calls.total}</TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </div>
-        </div>
+          <TabsContent value="calls" className="bg-white/70 backdrop-blur-sm rounded-lg shadow-sm">
+            <Card className="border-none bg-transparent">
+              <CardHeader>
+                <CardTitle>توزيع المكالمات {currentPeriod === "weekly" ? "الأسبوعية" : "السنوية"}</CardTitle>
+                <CardDescription>توزيع المكالمات حسب النوع</CardDescription>
+              </CardHeader>
+              <CardContent className="flex justify-center">
+                <div className="h-80 w-full max-w-md">
+                  <PieChart 
+                    data={callsChartData} 
+                    colors={['#3b82f6', '#8b5cf6', '#ef4444', '#f97316', '#10b981', '#06b6d4']} 
+                    legendClassName="text-sm text-gray-600"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
 
-        <div className="space-y-6">
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-right">نوع الاستفسار</TableHead>
-                  <TableHead className="text-center">العدد</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                <TableRow>
-                  <TableCell className="text-right">مشاريع مباعة</TableCell>
-                  <TableCell className="text-center font-bold">{customerServiceData.inquiries.soldProjects}</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell className="text-right">إيجارات شقق</TableCell>
-                  <TableCell className="text-center font-bold">{customerServiceData.inquiries.apartmentRentals}</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell className="text-right">استفسارات الصكوك</TableCell>
-                  <TableCell className="text-center font-bold">{customerServiceData.inquiries.deedInquiries}</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell className="text-right">طلب أوراق</TableCell>
-                  <TableCell className="text-center font-bold">{customerServiceData.inquiries.documentRequests}</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell className="text-right">استفسارات عامة</TableCell>
-                  <TableCell className="text-center font-bold">{customerServiceData.inquiries.general}</TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </div>
-        </div>
-
-        <div className="space-y-6">
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-right">حالة الطلب</TableHead>
-                  <TableHead className="text-center">العدد</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                <TableRow>
-                  <TableCell className="text-right">تم الإلغاء</TableCell>
-                  <TableCell className="text-center font-bold">{customerServiceData.maintenance.cancelled}</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell className="text-right">تم الحل</TableCell>
-                  <TableCell className="text-center font-bold">{customerServiceData.maintenance.resolved}</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell className="text-right">قيد المعالجة</TableCell>
-                  <TableCell className="text-center font-bold">{customerServiceData.maintenance.inProgress}</TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">رضا العملاء عن الخدمات</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{maintenanceSatisfaction.serviceQuality}%</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">رضا العملاء عن مدة الإغلاق</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{maintenanceSatisfaction.closureTime}%</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">نسبة الحل من أول مرة</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{maintenanceSatisfaction.firstTimeResolution}%</div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <Card>
+        <Card className="bg-white/70 backdrop-blur-sm shadow-sm border-none">
           <CardHeader>
-            <CardTitle>ملاحظات العملاء</CardTitle>
+            <CardTitle>آخر الشكاوى المسجلة</CardTitle>
+            <CardDescription>أحدث 5 شكاوى تم تسجيلها في النظام</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="whitespace-pre-wrap">{maintenanceSatisfaction.comments}</p>
+            {loading ? (
+              <p className="text-center py-4 text-muted-foreground">جاري تحميل البيانات...</p>
+            ) : recentComplaints.length > 0 ? (
+              <div className="overflow-x-auto rounded-md">
+                <table className="w-full border-collapse">
+                  <thead className="bg-muted/50">
+                    <tr className="text-right text-sm font-medium text-muted-foreground">
+                      <th className="p-3">رقم التذكرة</th>
+                      <th className="p-3">اسم العميل</th>
+                      <th className="p-3">المشروع</th>
+                      <th className="p-3">الشكوى</th>
+                      <th className="p-3">الحالة</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {recentComplaints.map((complaint: any) => (
+                      <tr key={complaint.id} className="hover:bg-muted/20 transition-colors">
+                        <td className="p-3 text-sm">{complaint.ticket_number || '-'}</td>
+                        <td className="p-3 text-sm">{complaint.client_name || '-'}</td>
+                        <td className="p-3 text-sm">{complaint.project || '-'}</td>
+                        <td className="p-3 text-sm line-clamp-1">{complaint.complaint || '-'}</td>
+                        <td className="p-3 text-sm">
+                          <span className={`px-2 py-1 rounded-full text-xs ${
+                            complaint.status === 'مغلقة' ? 'bg-success-light text-green-700' :
+                            complaint.status === 'قيد المعالجة' ? 'bg-warning-light text-amber-700' : 
+                            'bg-error-light text-red-700'
+                          }`}>
+                            {complaint.status || 'جديدة'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-center py-4 text-muted-foreground">لا توجد شكاوى مسجلة</p>
+            )}
           </CardContent>
         </Card>
       </div>

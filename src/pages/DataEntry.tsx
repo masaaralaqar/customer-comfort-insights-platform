@@ -324,10 +324,14 @@ export default function DataEntry() {
         await updateCustomerServiceData(customerServiceData);
       }
 
+      const serviceQualityHasValues = Object.values(maintenanceSatisfaction.serviceQuality).some(val => val > 0);
+      const closureTimeHasValues = Object.values(maintenanceSatisfaction.closureTime).some(val => val > 0);
+      const firstTimeResolutionHasValues = Object.values(maintenanceSatisfaction.firstTimeResolution).some(val => val > 0);
+      
       if (maintenanceSatisfaction && 
-         (maintenanceSatisfaction.serviceQuality > 0 || 
-          maintenanceSatisfaction.closureTime > 0 || 
-          maintenanceSatisfaction.firstTimeResolution > 0)) {
+         (serviceQualityHasValues || 
+          closureTimeHasValues || 
+          firstTimeResolutionHasValues)) {
         updateMaintenanceSatisfactionData(maintenanceSatisfaction);
       }
       
