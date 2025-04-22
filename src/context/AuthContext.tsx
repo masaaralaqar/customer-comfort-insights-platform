@@ -1,21 +1,21 @@
-import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import { auth, db } from '@/lib/firebase';
-import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
-import { doc, setDoc, getDoc, collection, getDocs, deleteDoc, updateDoc } from 'firebase/firestore';
 
-interface User {
+import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { User } from '@supabase/supabase-js';
+
+interface UserProfile {
   id: string;
   username: string;
   role: string;
 }
 
 interface AuthContextType {
-  user: User | null;
-  users: User[];
+  user: UserProfile | null;
+  users: UserProfile[];
   isAuthenticated: boolean;
   login: (username: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
-  addUser: (userData: Omit<User, "id">) => Promise<void>;
+  addUser: (userData: Omit<UserProfile, "id">) => Promise<void>;
   deleteUser: (id: string) => Promise<void>;
   resetUserPassword: (id: string, newPassword: string) => Promise<void>;
 }
@@ -23,17 +23,23 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [users, setUsers] = useState<User[]>([]);
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const [users, setUsers] = useState<UserProfile[]>([]);
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
-      if (firebaseUser) {
-        const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-        if (userDoc.exists()) {
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        const { data: profile } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+          
+        if (profile) {
           setUser({
-            id: firebaseUser.uid,
-            ...userDoc.data() as Omit<User, 'id'>
+            id: session.user.id,
+            username: profile.username || '',
+            role: profile.role || 'user'
           });
         }
       } else {
@@ -41,33 +47,80 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
+    // Initial session check
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const { data: profile } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+          
+        if (profile) {
+          setUser({
+            id: session.user.id,
+            username: profile.username || '',
+            role: profile.role || 'user'
+          });
+        }
+      }
+    };
+
+    checkUser();
     loadUsers();
 
-    return () => unsubscribe();
+    return () => {
+      authListener?.subscription.unsubscribe();
+    };
   }, []);
 
   const loadUsers = async () => {
-    const querySnapshot = await getDocs(collection(db, 'users'));
-    const usersList = querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    } as User));
-    setUsers(usersList);
+    try {
+      const { data, error } = await supabase.from('users').select('*');
+      if (error) throw error;
+      
+      const usersList = data.map(userData => ({
+        id: userData.id.toString(),
+        username: userData.username || '',
+        role: userData.role || 'user'
+      }));
+      
+      setUsers(usersList);
+    } catch (error) {
+      console.error('Error loading users:', error);
+    }
   };
 
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
-      // First check local users
+      // First try to find the user by username
+      const { data: userData } = await supabase
+        .from('users')
+        .select('*')
+        .eq('username', username)
+        .single();
+        
+      if (userData && userData.password === password) {
+        setUser({
+          id: userData.id.toString(),
+          username: userData.username || '',
+          role: userData.role || 'user'
+        });
+        return true;
+      }
+      
+      // If not found or password doesn't match, try local storage as fallback
       const localUsers = JSON.parse(localStorage.getItem('auth_users') || '[]');
-      const user = localUsers.find((u: User) => 
+      const localUser = localUsers.find((u: any) => 
         u.username === username && u.password === password
       );
       
-      if (user) {
+      if (localUser) {
         setUser({
-          id: user.id,
-          username: user.username,
-          role: user.role
+          id: localUser.id,
+          username: localUser.username,
+          role: localUser.role
         });
         return true;
       }
@@ -84,17 +137,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     try {
-      await signOut(auth);
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
       setUser(null);
     } catch (error) {
       console.error('Logout error:', error);
     }
   };
 
-  const addUser = async (userData: Omit<User, "id">) => {
+  const addUser = async (userData: Omit<UserProfile, "id">) => {
     try {
-      const userRef = doc(collection(db, 'users'));
-      await setDoc(userRef, userData);
+      const { data, error } = await supabase
+        .from('users')
+        .insert([userData])
+        .select();
+        
+      if (error) throw error;
       await loadUsers();
     } catch (error) {
       console.error('Error adding user:', error);
@@ -104,7 +162,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const deleteUser = async (id: string) => {
     try {
-      await deleteDoc(doc(db, 'users', id));
+      const { error } = await supabase
+        .from('users')
+        .delete()
+        .eq('id', id);
+        
+      if (error) throw error;
       await loadUsers();
     } catch (error) {
       console.error('Error deleting user:', error);
@@ -114,9 +177,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const resetUserPassword = async (id: string, newPassword: string) => {
     try {
-      await updateDoc(doc(db, 'users', id), {
-        password: newPassword
-      });
+      const { error } = await supabase
+        .from('users')
+        .update({ password: newPassword })
+        .eq('id', id);
+        
+      if (error) throw error;
       await loadUsers();
     } catch (error) {
       console.error('Error resetting password:', error);

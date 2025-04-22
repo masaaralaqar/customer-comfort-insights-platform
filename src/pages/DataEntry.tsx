@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -9,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { useMetrics } from "@/context/MetricsContext";
 import { useNotification } from "@/context/NotificationContext";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function DataEntry() {
   const { 
@@ -28,7 +28,7 @@ export default function DataEntry() {
   
   const { addNotification } = useNotification();
   
-  // نسخة عمل للتعديلات
+  // Copy for edits
   const [workingMetrics, setWorkingMetrics] = useState(metrics.map(metric => ({ ...metric })));
   const [workingQualityData, setWorkingQualityData] = useState(qualityData.map(item => ({ ...item })));
   const [workingNPSData, setWorkingNPSData] = useState(npsData.map(item => ({ ...item })));
@@ -58,20 +58,191 @@ export default function DataEntry() {
     }
   });
   
+  // Updated structure for maintenance satisfaction data to match expected MaintenanceSatisfactionData type
   const [maintenanceSatisfaction, setMaintenanceSatisfaction] = useState({
-    serviceQuality: 0,
-    closureTime: 0,
-    firstTimeResolution: 0,
-    comments: ""
+    serviceQuality: {
+      veryHappy: 0,
+      happy: 0,
+      neutral: 0,
+      unhappy: 0,
+      veryUnhappy: 0
+    },
+    closureTime: {
+      veryHappy: 0,
+      happy: 0,
+      neutral: 0,
+      unhappy: 0,
+      veryUnhappy: 0
+    },
+    firstTimeResolution: {
+      veryHappy: 0,
+      happy: 0,
+      neutral: 0,
+      unhappy: 0,
+      veryUnhappy: 0
+    },
+    comments: []
   });
 
-  // تحديث نسخة العمل عند تغيير الفترة
+  // Update working copy when period changes
   useEffect(() => {
     setWorkingMetrics(metrics.map(metric => ({ ...metric })));
     setWorkingQualityData(qualityData.map(item => ({ ...item })));
     setWorkingNPSData(npsData.map(item => ({ ...item })));
     setWorkingCallsData(callsData.map(item => ({ ...item })));
+    
+    // Load data from Supabase when period changes
+    loadCustomerServiceData();
+    loadMaintenanceSatisfactionData();
   }, [metrics, qualityData, npsData, callsData, currentPeriod]);
+
+  // Load customer service data from Supabase
+  const loadCustomerServiceData = async () => {
+    try {
+      const { data: callsData, error: callsError } = await supabase
+        .from('customer_service_metrics')
+        .select('*')
+        .eq('period', currentPeriod)
+        .eq('category', 'calls');
+        
+      const { data: inquiriesData, error: inquiriesError } = await supabase
+        .from('customer_service_metrics')
+        .select('*')
+        .eq('period', currentPeriod)
+        .eq('category', 'inquiries');
+        
+      const { data: maintenanceData, error: maintenanceError } = await supabase
+        .from('customer_service_metrics')
+        .select('*')
+        .eq('period', currentPeriod)
+        .eq('category', 'maintenance');
+        
+      if (callsError || inquiriesError || maintenanceError) {
+        console.error('Error loading data:', callsError || inquiriesError || maintenanceError);
+        return;
+      }
+      
+      // Initialize data structure
+      const newData = {
+        calls: {
+          complaints: 0,
+          contactRequests: 0,
+          maintenanceRequests: 0,
+          inquiries: 0,
+          officeInterested: 0,
+          projectsInterested: 0,
+          customersInterested: 0,
+          total: 0
+        },
+        inquiries: {
+          general: 0,
+          documentRequests: 0,
+          deedInquiries: 0,
+          apartmentRentals: 0,
+          soldProjects: 0
+        },
+        maintenance: {
+          cancelled: 0,
+          resolved: 0,
+          inProgress: 0
+        }
+      };
+      
+      // Fill in data from Supabase
+      if (callsData) {
+        callsData.forEach(item => {
+          if (item.metric_name && item.metric_name in newData.calls) {
+            newData.calls[item.metric_name as keyof typeof newData.calls] = item.value || 0;
+          }
+        });
+      }
+      
+      if (inquiriesData) {
+        inquiriesData.forEach(item => {
+          if (item.metric_name && item.metric_name in newData.inquiries) {
+            newData.inquiries[item.metric_name as keyof typeof newData.inquiries] = item.value || 0;
+          }
+        });
+      }
+      
+      if (maintenanceData) {
+        maintenanceData.forEach(item => {
+          if (item.metric_name && item.metric_name in newData.maintenance) {
+            newData.maintenance[item.metric_name as keyof typeof newData.maintenance] = item.value || 0;
+          }
+        });
+      }
+      
+      // Calculate total
+      newData.calls.total = Object.values(newData.calls).reduce((sum, val) => 
+        typeof val === 'number' ? sum + val : sum, 0
+      ) - newData.calls.total;
+      
+      setCustomerServiceData(newData);
+    } catch (error) {
+      console.error('Error loading customer service data:', error);
+    }
+  };
+  
+  // Load maintenance satisfaction data from Supabase
+  const loadMaintenanceSatisfactionData = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('maintenance_satisfaction')
+        .select('*')
+        .eq('period', currentPeriod);
+        
+      if (error) {
+        console.error('Error loading maintenance satisfaction data:', error);
+        return;
+      }
+      
+      if (data && data.length > 0) {
+        const newData = {
+          serviceQuality: {
+            veryHappy: 0,
+            happy: 0,
+            neutral: 0,
+            unhappy: 0,
+            veryUnhappy: 0
+          },
+          closureTime: {
+            veryHappy: 0,
+            happy: 0,
+            neutral: 0,
+            unhappy: 0,
+            veryUnhappy: 0
+          },
+          firstTimeResolution: {
+            veryHappy: 0,
+            happy: 0,
+            neutral: 0,
+            unhappy: 0,
+            veryUnhappy: 0
+          },
+          comments: [] as string[]
+        };
+        
+        data.forEach(item => {
+          if (item.satisfaction_metric === 'serviceQuality' && item.rating) {
+            newData.serviceQuality[item.rating as keyof typeof newData.serviceQuality] = item.percentage || 0;
+          } else if (item.satisfaction_metric === 'closureTime' && item.rating) {
+            newData.closureTime[item.rating as keyof typeof newData.closureTime] = item.percentage || 0;
+          } else if (item.satisfaction_metric === 'firstTimeResolution' && item.rating) {
+            newData.firstTimeResolution[item.rating as keyof typeof newData.firstTimeResolution] = item.percentage || 0;
+          }
+          
+          if (item.notes) {
+            newData.comments.push(item.notes);
+          }
+        });
+        
+        setMaintenanceSatisfaction(newData);
+      }
+    } catch (error) {
+      console.error('Error loading maintenance satisfaction data:', error);
+    }
+  };
 
   const handleMetricChange = (index: number, field: string, value: string | number) => {
     setWorkingMetrics(prev => {
@@ -176,6 +347,26 @@ export default function DataEntry() {
         updateMaintenanceSatisfactionData(maintenanceSatisfaction);
       }
       
+      // Submit to Supabase
+      const metricsToUpdate = workingMetrics.filter((metric, index) => 
+        metric.value !== metrics[index].value || metric.target !== metrics[index].target
+      );
+      
+      for (const metric of metricsToUpdate) {
+        await supabase.from('metrics').upsert({
+          title: metric.title,
+          value: metric.value,
+          target: metric.target,
+          change: metric.change,
+          ispositive: metric.isPositive,
+          reachedtarget: metric.reachedTarget,
+          islowerbetter: metric.isLowerBetter,
+          _period: currentPeriod
+        }, {
+          onConflict: 'title,_period'
+        });
+      }
+      
       addNotification({
         title: "تم الحفظ",
         message: `تم تحديث البيانات ${currentPeriod === "weekly" ? "الأسبوعية" : "السنوية"} بنجاح`,
@@ -192,23 +383,10 @@ export default function DataEntry() {
     }
   };
 
-  // تحديث البيانات مباشرة عند التغيير
+  // Update customer service data directly when changed
   const handleCustomerServiceChange = async () => {
     try {
-      // Calculate total calls
-      const total = Object.values(customerServiceData.calls).reduce((sum, val) => 
-        typeof val === 'number' ? sum + val : sum, 0
-      );
-      
-      const updatedData = {
-        ...customerServiceData,
-        calls: {
-          ...customerServiceData.calls,
-          total: total
-        }
-      };
-
-      await updateCustomerServiceData(updatedData);
+      await updateCustomerServiceData(customerServiceData);
       addNotification({
         title: "تم التحديث",
         message: "تم تحديث بيانات خدمة العملاء بنجاح",
@@ -224,9 +402,63 @@ export default function DataEntry() {
     }
   };
 
+  // Update maintenance satisfaction data
   const handleMaintenanceSatisfactionChange = async () => {
     try {
       await updateMaintenanceSatisfactionData(maintenanceSatisfaction);
+      
+      // Save to Supabase
+      try {
+        // For service quality
+        for (const [rating, percentage] of Object.entries(maintenanceSatisfaction.serviceQuality)) {
+          await supabase.from('maintenance_satisfaction').upsert({
+            period: currentPeriod,
+            satisfaction_metric: 'serviceQuality',
+            rating: rating,
+            percentage: percentage
+          }, {
+            onConflict: 'period,satisfaction_metric,rating'
+          });
+        }
+        
+        // For closure time
+        for (const [rating, percentage] of Object.entries(maintenanceSatisfaction.closureTime)) {
+          await supabase.from('maintenance_satisfaction').upsert({
+            period: currentPeriod,
+            satisfaction_metric: 'closureTime',
+            rating: rating,
+            percentage: percentage
+          }, {
+            onConflict: 'period,satisfaction_metric,rating'
+          });
+        }
+        
+        // For first time resolution
+        for (const [rating, percentage] of Object.entries(maintenanceSatisfaction.firstTimeResolution)) {
+          await supabase.from('maintenance_satisfaction').upsert({
+            period: currentPeriod,
+            satisfaction_metric: 'firstTimeResolution',
+            rating: rating,
+            percentage: percentage
+          }, {
+            onConflict: 'period,satisfaction_metric,rating'
+          });
+        }
+        
+        // For comments
+        if (maintenanceSatisfaction.comments.length > 0) {
+          for (const comment of maintenanceSatisfaction.comments) {
+            await supabase.from('maintenance_satisfaction').insert({
+              period: currentPeriod,
+              satisfaction_metric: 'comment',
+              notes: comment
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error saving to Supabase:', error);
+      }
+      
       addNotification({
         title: "تم التحديث",
         message: "تم تحديث بيانات رضا العملاء عن الصيانة بنجاح",
@@ -240,6 +472,17 @@ export default function DataEntry() {
         type: "error"
       });
     }
+  };
+
+  // Helper function to update maintenance satisfaction values
+  const updateSatisfactionValue = (category: 'serviceQuality' | 'closureTime' | 'firstTimeResolution', rating: keyof typeof maintenanceSatisfaction.serviceQuality, value: number) => {
+    setMaintenanceSatisfaction(prev => ({
+      ...prev,
+      [category]: {
+        ...prev[category],
+        [rating]: value
+      }
+    }));
   };
 
   return (
@@ -661,76 +904,24 @@ export default function DataEntry() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div>
-                      <Label>الرضا عن خدمات الصيانة (%)</Label>
-                      <Input
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={maintenanceSatisfaction.serviceQuality}
-                        onChange={(e) => setMaintenanceSatisfaction(prev => ({
-                          ...prev,
-                          serviceQuality: Number(e.target.value)
-                        }))}
-                      />
-                    </div>
-                    <div>
-                      <Label>الرضا عن مدة إغلاق الطلبات (%)</Label>
-                      <Input
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={maintenanceSatisfaction.closureTime}
-                        onChange={(e) => setMaintenanceSatisfaction(prev => ({
-                          ...prev,
-                          closureTime: Number(e.target.value)
-                        }))}
-                      />
-                    </div>
-                    <div>
-                      <Label>نسبة الإغلاق من أول مرة (%)</Label>
-                      <Input
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={maintenanceSatisfaction.firstTimeResolution}
-                        onChange={(e) => setMaintenanceSatisfaction(prev => ({
-                          ...prev,
-                          firstTimeResolution: Number(e.target.value)
-                        }))}
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <Label>ملاحظات العملاء</Label>
-                    <Textarea
-                      value={maintenanceSatisfaction.comments}
-                      onChange={(e) => setMaintenanceSatisfaction(prev => ({
-                        ...prev,
-                        comments: e.target.value
-                      }))}
-                      placeholder="أدخل ملاحظات العملاء هنا"
-                      className="min-h-[100px]"
-                    />
-                  </div>
-                </div>
-                <div className="flex justify-end mt-4">
-                  <Button onClick={handleMaintenanceSatisfactionChange}>
-                    حفظ بيانات رضا العملاء
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-
-        <div className="flex justify-end">
-          <Button onClick={saveChanges} size="lg">
-            حفظ تغييرات البيانات {currentPeriod === "weekly" ? "الأسبوعية" : "السنوية"}
-          </Button>
-        </div>
-      </div>
-    </Layout>
-  );
-}
+                  <div className="border rounded-lg p-4">
+                    <h3 className="font-medium mb-4">الرضا عن خدمات الصيانة</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                      <div>
+                        <Label>راضي جدًا (%)</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={maintenanceSatisfaction.serviceQuality.veryHappy}
+                          onChange={(e) => updateSatisfactionValue('serviceQuality', 'veryHappy', Number(e.target.value))}
+                        />
+                      </div>
+                      <div>
+                        <Label>راضي (%)</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={maintenanceSatisfaction.serviceQuality.happy}
+                          onChange={(e) => updateSatisfactionValue('serviceQuality', 'happy', Number(e.target.value

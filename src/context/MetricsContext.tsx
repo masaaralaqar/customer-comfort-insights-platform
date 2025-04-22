@@ -113,7 +113,7 @@ interface MetricsContextType {
   addQualityData: (data: QualityData) => void;
   addNPSData: (data: NPSData) => void;
   addCallsData: (data: CallsData) => void;
-  updateCustomerServiceData: (data: CustomerServiceData) => Promise<void>;
+  updateCustomerServiceData: (data: CustomerServiceData): Promise<void>;
   updateMaintenanceSatisfactionData: (data: MaintenanceSatisfactionData) => void;
 }
 
@@ -654,7 +654,7 @@ export function MetricsProvider({ children }: { children: ReactNode }) {
     }));
   };
 
-  const updateCustomerServiceData = async (data: CustomerServiceData) => {
+  const updateCustomerServiceData = async (data: CustomerServiceData): Promise<void> => {
     try {
       const total = Object.values(data.calls).reduce((sum, val) => 
         typeof val === 'number' && !isNaN(val) && val >= 0 ? sum + val : sum, 0
@@ -691,7 +691,48 @@ export function MetricsProvider({ children }: { children: ReactNode }) {
         [currentPeriod]: updatedData
       }));
 
-      return updatedData;
+      try {
+        for (const [category, count] of Object.entries(data.calls)) {
+          if (category !== 'total' && typeof count === 'number') {
+            await supabase.from('customer_service_metrics').upsert({
+              period: currentPeriod,
+              category: 'calls',
+              metric_name: category,
+              value: count
+            }, {
+              onConflict: 'period,category,metric_name'
+            });
+          }
+        }
+
+        for (const [category, count] of Object.entries(data.inquiries)) {
+          if (typeof count === 'number') {
+            await supabase.from('customer_service_metrics').upsert({
+              period: currentPeriod,
+              category: 'inquiries',
+              metric_name: category,
+              value: count
+            }, {
+              onConflict: 'period,category,metric_name'
+            });
+          }
+        }
+
+        for (const [category, count] of Object.entries(data.maintenance)) {
+          if (typeof count === 'number') {
+            await supabase.from('customer_service_metrics').upsert({
+              period: currentPeriod,
+              category: 'maintenance',
+              metric_name: category,
+              value: count
+            }, {
+              onConflict: 'period,category,metric_name'
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error saving to Supabase:', error);
+      }
     } catch (error) {
       console.error('خطأ في حفظ البيانات:', error);
       throw new Error('فشل في حفظ البيانات');
