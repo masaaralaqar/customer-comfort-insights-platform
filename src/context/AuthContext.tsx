@@ -71,7 +71,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loadUsers();
 
     return () => {
-      authListener?.subscription.unsubscribe();
+      if (authListener && authListener.subscription) {
+        authListener.subscription.unsubscribe();
+      }
     };
   }, []);
 

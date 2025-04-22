@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 // تعريف أنواع البيانات
 export interface MetricData {
@@ -113,7 +114,7 @@ interface MetricsContextType {
   addQualityData: (data: QualityData) => void;
   addNPSData: (data: NPSData) => void;
   addCallsData: (data: CallsData) => void;
-  updateCustomerServiceData: (data: CustomerServiceData): Promise<void>;
+  updateCustomerServiceData: (data: CustomerServiceData) => Promise<void>;
   updateMaintenanceSatisfactionData: (data: MaintenanceSatisfactionData) => void;
 }
 

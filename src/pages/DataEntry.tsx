@@ -28,7 +28,6 @@ export default function DataEntry() {
   
   const { addNotification } = useNotification();
   
-  // Copy for edits
   const [workingMetrics, setWorkingMetrics] = useState(metrics.map(metric => ({ ...metric })));
   const [workingQualityData, setWorkingQualityData] = useState(qualityData.map(item => ({ ...item })));
   const [workingNPSData, setWorkingNPSData] = useState(npsData.map(item => ({ ...item })));
@@ -58,7 +57,6 @@ export default function DataEntry() {
     }
   });
   
-  // Updated structure for maintenance satisfaction data to match expected MaintenanceSatisfactionData type
   const [maintenanceSatisfaction, setMaintenanceSatisfaction] = useState({
     serviceQuality: {
       veryHappy: 0,
@@ -84,19 +82,16 @@ export default function DataEntry() {
     comments: []
   });
 
-  // Update working copy when period changes
   useEffect(() => {
     setWorkingMetrics(metrics.map(metric => ({ ...metric })));
     setWorkingQualityData(qualityData.map(item => ({ ...item })));
     setWorkingNPSData(npsData.map(item => ({ ...item })));
     setWorkingCallsData(callsData.map(item => ({ ...item })));
     
-    // Load data from Supabase when period changes
     loadCustomerServiceData();
     loadMaintenanceSatisfactionData();
   }, [metrics, qualityData, npsData, callsData, currentPeriod]);
 
-  // Load customer service data from Supabase
   const loadCustomerServiceData = async () => {
     try {
       const { data: callsData, error: callsError } = await supabase
@@ -122,7 +117,6 @@ export default function DataEntry() {
         return;
       }
       
-      // Initialize data structure
       const newData = {
         calls: {
           complaints: 0,
@@ -148,7 +142,6 @@ export default function DataEntry() {
         }
       };
       
-      // Fill in data from Supabase
       if (callsData) {
         callsData.forEach(item => {
           if (item.metric_name && item.metric_name in newData.calls) {
@@ -173,7 +166,6 @@ export default function DataEntry() {
         });
       }
       
-      // Calculate total
       newData.calls.total = Object.values(newData.calls).reduce((sum, val) => 
         typeof val === 'number' ? sum + val : sum, 0
       ) - newData.calls.total;
@@ -183,8 +175,7 @@ export default function DataEntry() {
       console.error('Error loading customer service data:', error);
     }
   };
-  
-  // Load maintenance satisfaction data from Supabase
+
   const loadMaintenanceSatisfactionData = async () => {
     try {
       const { data, error } = await supabase
@@ -249,7 +240,6 @@ export default function DataEntry() {
       const newMetrics = [...prev];
       if (field === 'value') {
         newMetrics[index].value = value.toString();
-        // حساب نسبة التغيير
         const currentValue = parseFloat(value.toString());
         const targetValue = parseFloat(newMetrics[index].target);
         const changePercentage = ((currentValue - targetValue) / targetValue) * 100;
@@ -303,14 +293,12 @@ export default function DataEntry() {
 
   const saveChanges = async () => {
     try {
-      // تحديث البيانات الرئيسية
       workingMetrics.forEach((metric, index) => {
         if (metric.value !== metrics[index].value || metric.target !== metrics[index].target) {
           updateMetric(index, metric);
         }
       });
       
-      // تحديث بيانات الجودة
       workingQualityData.forEach((data, index) => {
         const original = qualityData[index];
         if (JSON.stringify(data) !== JSON.stringify(original)) {
@@ -318,7 +306,6 @@ export default function DataEntry() {
         }
       });
       
-      // تحديث بيانات الترشيح
       workingNPSData.forEach((data, index) => {
         const original = npsData[index];
         if (JSON.stringify(data) !== JSON.stringify(original)) {
@@ -326,7 +313,6 @@ export default function DataEntry() {
         }
       });
       
-      // تحديث بيانات المكالمات
       workingCallsData.forEach((data, index) => {
         const original = callsData[index];
         if (JSON.stringify(data) !== JSON.stringify(original)) {
@@ -334,12 +320,10 @@ export default function DataEntry() {
         }
       });
 
-      // تحديث بيانات خدمة العملاء
       if (customerServiceData && customerServiceData.calls.total > 0) {
         await updateCustomerServiceData(customerServiceData);
       }
 
-      // تحديث بيانات رضا العملاء عن الصيانة
       if (maintenanceSatisfaction && 
          (maintenanceSatisfaction.serviceQuality > 0 || 
           maintenanceSatisfaction.closureTime > 0 || 
@@ -347,7 +331,6 @@ export default function DataEntry() {
         updateMaintenanceSatisfactionData(maintenanceSatisfaction);
       }
       
-      // Submit to Supabase
       const metricsToUpdate = workingMetrics.filter((metric, index) => 
         metric.value !== metrics[index].value || metric.target !== metrics[index].target
       );
@@ -383,7 +366,6 @@ export default function DataEntry() {
     }
   };
 
-  // Update customer service data directly when changed
   const handleCustomerServiceChange = async () => {
     try {
       await updateCustomerServiceData(customerServiceData);
@@ -402,14 +384,11 @@ export default function DataEntry() {
     }
   };
 
-  // Update maintenance satisfaction data
   const handleMaintenanceSatisfactionChange = async () => {
     try {
       await updateMaintenanceSatisfactionData(maintenanceSatisfaction);
       
-      // Save to Supabase
       try {
-        // For service quality
         for (const [rating, percentage] of Object.entries(maintenanceSatisfaction.serviceQuality)) {
           await supabase.from('maintenance_satisfaction').upsert({
             period: currentPeriod,
@@ -421,7 +400,6 @@ export default function DataEntry() {
           });
         }
         
-        // For closure time
         for (const [rating, percentage] of Object.entries(maintenanceSatisfaction.closureTime)) {
           await supabase.from('maintenance_satisfaction').upsert({
             period: currentPeriod,
@@ -433,7 +411,6 @@ export default function DataEntry() {
           });
         }
         
-        // For first time resolution
         for (const [rating, percentage] of Object.entries(maintenanceSatisfaction.firstTimeResolution)) {
           await supabase.from('maintenance_satisfaction').upsert({
             period: currentPeriod,
@@ -445,7 +422,6 @@ export default function DataEntry() {
           });
         }
         
-        // For comments
         if (maintenanceSatisfaction.comments.length > 0) {
           for (const comment of maintenanceSatisfaction.comments) {
             await supabase.from('maintenance_satisfaction').insert({
@@ -474,7 +450,6 @@ export default function DataEntry() {
     }
   };
 
-  // Helper function to update maintenance satisfaction values
   const updateSatisfactionValue = (category: 'serviceQuality' | 'closureTime' | 'firstTimeResolution', rating: keyof typeof maintenanceSatisfaction.serviceQuality, value: number) => {
     setMaintenanceSatisfaction(prev => ({
       ...prev,
@@ -702,7 +677,6 @@ export default function DataEntry() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-6">
-                  {/* فئة المكالمات */}
                   <div className="border rounded-lg p-4">
                     <h3 className="font-medium mb-4">فئة المكالمات</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -786,7 +760,6 @@ export default function DataEntry() {
                     </div>
                   </div>
 
-                  {/* فئة الاستفسارات */}
                   <div className="border rounded-lg p-4">
                     <h3 className="font-medium mb-4">فئة الاستفسارات</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -848,7 +821,6 @@ export default function DataEntry() {
                     </div>
                   </div>
 
-                  {/* فئة طلبات الصيانة */}
                   <div className="border rounded-lg p-4">
                     <h3 className="font-medium mb-4">فئة طلبات الصيانة</h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -924,4 +896,182 @@ export default function DataEntry() {
                           min="0"
                           max="100"
                           value={maintenanceSatisfaction.serviceQuality.happy}
-                          onChange={(e) => updateSatisfactionValue('serviceQuality', 'happy', Number(e.target.value
+                          onChange={(e) => updateSatisfactionValue('serviceQuality', 'happy', Number(e.target.value))}
+                        />
+                      </div>
+                      <div>
+                        <Label>محايد (%)</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={maintenanceSatisfaction.serviceQuality.neutral}
+                          onChange={(e) => updateSatisfactionValue('serviceQuality', 'neutral', Number(e.target.value))}
+                        />
+                      </div>
+                      <div>
+                        <Label>غير راضي (%)</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={maintenanceSatisfaction.serviceQuality.unhappy}
+                          onChange={(e) => updateSatisfactionValue('serviceQuality', 'unhappy', Number(e.target.value))}
+                        />
+                      </div>
+                      <div>
+                        <Label>غير راضي تمامًا (%)</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={maintenanceSatisfaction.serviceQuality.veryUnhappy}
+                          onChange={(e) => updateSatisfactionValue('serviceQuality', 'veryUnhappy', Number(e.target.value))}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="border rounded-lg p-4">
+                    <h3 className="font-medium mb-4">الرضا عن مدة إغلاق الطلبات</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                      <div>
+                        <Label>راضي جدًا (%)</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={maintenanceSatisfaction.closureTime.veryHappy}
+                          onChange={(e) => updateSatisfactionValue('closureTime', 'veryHappy', Number(e.target.value))}
+                        />
+                      </div>
+                      <div>
+                        <Label>راضي (%)</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={maintenanceSatisfaction.closureTime.happy}
+                          onChange={(e) => updateSatisfactionValue('closureTime', 'happy', Number(e.target.value))}
+                        />
+                      </div>
+                      <div>
+                        <Label>محايد (%)</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={maintenanceSatisfaction.closureTime.neutral}
+                          onChange={(e) => updateSatisfactionValue('closureTime', 'neutral', Number(e.target.value))}
+                        />
+                      </div>
+                      <div>
+                        <Label>غير راضي (%)</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={maintenanceSatisfaction.closureTime.unhappy}
+                          onChange={(e) => updateSatisfactionValue('closureTime', 'unhappy', Number(e.target.value))}
+                        />
+                      </div>
+                      <div>
+                        <Label>غير راضي تمامًا (%)</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={maintenanceSatisfaction.closureTime.veryUnhappy}
+                          onChange={(e) => updateSatisfactionValue('closureTime', 'veryUnhappy', Number(e.target.value))}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="border rounded-lg p-4">
+                    <h3 className="font-medium mb-4">هل تم إغلاق الطلب من أول مرة؟</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                      <div>
+                        <Label>راضي جدًا (%)</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={maintenanceSatisfaction.firstTimeResolution.veryHappy}
+                          onChange={(e) => updateSatisfactionValue('firstTimeResolution', 'veryHappy', Number(e.target.value))}
+                        />
+                      </div>
+                      <div>
+                        <Label>راضي (%)</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={maintenanceSatisfaction.firstTimeResolution.happy}
+                          onChange={(e) => updateSatisfactionValue('firstTimeResolution', 'happy', Number(e.target.value))}
+                        />
+                      </div>
+                      <div>
+                        <Label>محايد (%)</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={maintenanceSatisfaction.firstTimeResolution.neutral}
+                          onChange={(e) => updateSatisfactionValue('firstTimeResolution', 'neutral', Number(e.target.value))}
+                        />
+                      </div>
+                      <div>
+                        <Label>غير راضي (%)</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={maintenanceSatisfaction.firstTimeResolution.unhappy}
+                          onChange={(e) => updateSatisfactionValue('firstTimeResolution', 'unhappy', Number(e.target.value))}
+                        />
+                      </div>
+                      <div>
+                        <Label>غير راضي تمامًا (%)</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={maintenanceSatisfaction.firstTimeResolution.veryUnhappy}
+                          onChange={(e) => updateSatisfactionValue('firstTimeResolution', 'veryUnhappy', Number(e.target.value))}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="border rounded-lg p-4">
+                    <h3 className="font-medium mb-4">ملاحظات</h3>
+                    <Textarea
+                      placeholder="أضف ملاحظات العملاء هنا..."
+                      value={maintenanceSatisfaction.comments.join('\n')}
+                      onChange={(e) => setMaintenanceSatisfaction(prev => ({
+                        ...prev,
+                        comments: e.target.value.split('\n')
+                      }))}
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end mt-4">
+                  <Button onClick={handleMaintenanceSatisfactionChange}>
+                    حفظ بيانات رضا العملاء
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+        
+        <div className="flex justify-end mt-6">
+          <Button onClick={saveChanges} size="lg" className="px-8">
+            حفظ جميع التغييرات
+          </Button>
+        </div>
+      </div>
+    </Layout>
+  );
+}
