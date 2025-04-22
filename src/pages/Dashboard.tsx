@@ -6,9 +6,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useMetrics } from "@/context/MetricsContext";
 import MetricCard from "@/components/dashboard/MetricCard";
-import { BarChart } from "@/components/charts/BarChart";
-import { LineChart } from "@/components/charts/LineChart";
-import { PieChart } from "@/components/charts/PieChart";
+import BarChart from "@/components/charts/BarChart";
+import LineChart from "@/components/charts/LineChart";
+import PieChart from "@/components/charts/PieChart";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function Dashboard() {
