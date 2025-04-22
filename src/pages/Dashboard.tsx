@@ -103,10 +103,12 @@ export default function Dashboard() {
               <CardContent>
                 <div className="h-80 w-full">
                   <LineChart 
-                    data={qualityChartData} 
-                    colors={['#10b981', '#3b82f6', '#f97316']} 
-                    gridClassName="text-gray-400 opacity-30"
-                    legendClassName="text-sm text-gray-600"
+                    title="مؤشرات الجودة"
+                    data={qualityChartData}
+                    dataKey="name"
+                    categories={['جودة المرافق', 'جودة الصيانة', 'جودة التسليم']}
+                    colors={['#10b981', '#3b82f6', '#f97316']}
+                    className="text-gray-400 opacity-30"
                   />
                 </div>
               </CardContent>
@@ -122,10 +124,12 @@ export default function Dashboard() {
               <CardContent>
                 <div className="h-80 w-full">
                   <BarChart 
-                    data={npsChartData} 
-                    colors={['#22c55e', '#8b5cf6', '#ef4444']} 
-                    gridClassName="text-gray-400 opacity-30"
-                    legendClassName="text-sm text-gray-600"
+                    title="مؤشرات الترشيح"
+                    data={npsChartData}
+                    dataKey="name"
+                    categories={['العملاء الجدد', 'بعد السنة الأولى', 'العملاء القدامى']}
+                    colors={['#22c55e', '#8b5cf6', '#ef4444']}
+                    className="text-sm text-gray-600"
                   />
                 </div>
               </CardContent>
@@ -141,9 +145,10 @@ export default function Dashboard() {
               <CardContent className="flex justify-center">
                 <div className="h-80 w-full max-w-md">
                   <PieChart 
-                    data={callsChartData} 
-                    colors={['#3b82f6', '#8b5cf6', '#ef4444', '#f97316', '#10b981', '#06b6d4']} 
-                    legendClassName="text-sm text-gray-600"
+                    title="توزيع المكالمات"
+                    data={callsChartData}
+                    colors={['#3b82f6', '#8b5cf6', '#ef4444', '#f97316', '#10b981', '#06b6d4']}
+                    showLegend={true}
                   />
                 </div>
               </CardContent>
