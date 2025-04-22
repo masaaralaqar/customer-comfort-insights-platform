@@ -30,14 +30,14 @@ export default function Sidebar() {
   ];
 
   return (
-    <div className="h-full flex flex-col bg-gradient-to-br from-primary to-primary/80 text-white shadow-lg">
-      <div className="p-6 flex flex-col items-center border-b border-white/10">
-        <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mb-3">
-          <User size={32} className="text-white" />
+    <div className="h-full flex flex-col bg-gradient-to-br from-gray-800 to-gray-900 text-white border-l border-gray-700/30 shadow-xl">
+      <div className="p-6 flex flex-col items-center border-b border-gray-700/30">
+        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/30 flex items-center justify-center mb-3">
+          <User size={32} className="text-primary" />
         </div>
         <div className="text-center">
-          <h3 className="font-bold">{user?.username || "مستخدم"}</h3>
-          <p className="text-sm text-white/70">{user?.role || "مستخدم"}</p>
+          <h3 className="font-bold text-white">{user?.username || "مستخدم"}</h3>
+          <p className="text-sm text-gray-300">{user?.role || "مستخدم"}</p>
         </div>
       </div>
 
@@ -50,8 +50,8 @@ export default function Sidebar() {
                 className={({ isActive }) => 
                   `flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
                     isActive 
-                      ? "bg-white/20 text-white font-medium" 
-                      : "text-white/70 hover:bg-white/10 hover:text-white"
+                      ? "bg-gray-700/30 text-white font-medium border-r-2 border-primary" 
+                      : "text-gray-300 hover:bg-gray-700/20 hover:text-white"
                   }`
                 }
               >
@@ -63,13 +63,13 @@ export default function Sidebar() {
         </ul>
       </nav>
 
-      <div className="p-4 border-t border-white/10">
+      <div className="p-4 border-t border-gray-700/30">
         <Button 
           variant="ghost" 
-          className="w-full justify-start text-white/70 hover:text-white hover:bg-white/10"
+          className="w-full justify-start text-gray-300 hover:text-white hover:bg-gray-700/20"
           onClick={handleLogout}
         >
-          <LogOut size={18} className="mr-2" />
+          <LogOut size={18} className="ml-2" />
           <span>تسجيل الخروج</span>
         </Button>
       </div>
